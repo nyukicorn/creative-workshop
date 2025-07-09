@@ -38,7 +38,7 @@ jobs:
       
       - name: Install Claude Code SDK
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g @anthropic-ai/claude-code@0.3.0
       
       - name: Setup Output Directories
         id: setup-dirs
@@ -56,7 +56,7 @@ jobs:
       
       - name: Install Claude Code SDK
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g @anthropic-ai/claude-code@0.3.0
       
       - name: Reset MCP Before Background Generation
         run: |
