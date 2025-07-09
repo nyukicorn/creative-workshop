@@ -3,32 +3,38 @@
     "t2i-google-imagen3": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/t2i/google/imagen/3/generate-002",
-      "description": "Google Imagen 3 Text-to-Image"
+      "description": "Google Imagen 3 Text-to-Image",
+      "autoApprove": true
     },
     "t2i-google-imagen3-fast": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/t2i/google/imagen/3/fast-002",
-      "description": "Google Imagen 3 Fast Text-to-Image"
+      "description": "Google Imagen 3 Fast Text-to-Image",
+      "autoApprove": true
     },
     "t2m-google-lyria": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/t2m/google/lyria/002/latest",
-      "description": "Google Lyria Text-to-Music ⭐"
+      "description": "Google Lyria Text-to-Music ⭐",
+      "autoApprove": true
     },
     "i2v-fal-hailuo-02-pro": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/i2v/fal/minimax/hailuo-02/pro",
-      "description": "Fal.ai Hailuo-02 Pro Image-to-Video ⭐"
+      "description": "Fal.ai Hailuo-02 Pro Image-to-Video ⭐",
+      "autoApprove": true
     },
     "i2i-fal-flux-kontext-max": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/i2i/fal/flux/kontext/max",
-      "description": "Fal.ai Flux Kontext Max Image-to-Image ⭐"
+      "description": "Fal.ai Flux Kontext Max Image-to-Image ⭐",
+      "autoApprove": true
     },
     "i2i3d-fal-hunyuan3d-v21": {
       "type": "http",
       "url": "https://mcp-unified-server-zl3xx5lsaq-uc.a.run.app/i2i3d/fal/hunyuan/3d-v21",
-      "description": "Fal.ai Hunyuan3D v2.1 Image-to-3D Generation ⭐"
+      "description": "Fal.ai Hunyuan3D v2.1 Image-to-3D Generation ⭐",
+      "autoApprove": true
     },
     "blender": {
       "command": "node",
