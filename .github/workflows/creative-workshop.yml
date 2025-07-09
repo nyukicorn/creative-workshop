@@ -26,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       assets-generated: ${{ steps.check-assets.outputs.success }}
+      output-dir: ${{ steps.setup-dirs.outputs.output-dir }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,45 +36,67 @@ jobs:
         with:
           node-version: '18'
       
+      - name: Setup Output Directories
+        id: setup-dirs
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          OUTPUT_DIR="./assets/${TIMESTAMP}"
+          echo "output-dir=${OUTPUT_DIR}" >> $GITHUB_OUTPUT
+          echo "OUTPUT_DIR=${OUTPUT_DIR}" >> $GITHUB_ENV
+          mkdir -p ${OUTPUT_DIR}/{backgrounds,audio,models,optimized}
+          echo "📁 Created output directory: ${OUTPUT_DIR}"
+      
       - name: Install Claude Code SDK
         run: |
           npm install -g @anthropic-ai/claude-code
       
       - name: Generate 360 Panorama Background  
+        timeout-minutes: 15
         run: |
           echo "🌅 Generating 360 degree panorama background..."
-          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using Kamui MCP. $(cat ./prompts/panorama.txt). Save result to ./assets/backgrounds/"
+          echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using Kamui MCP. $(cat ./prompts/panorama.txt). Save result to ${OUTPUT_DIR}/backgrounds/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
       - name: Generate Background Music
+        timeout-minutes: 15
         run: |
           echo "🎵 Generating background music..."
-          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using Kamui MCP. $(cat ./prompts/music.txt). Save result to ./assets/audio/"
+          echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
+          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using Kamui MCP. $(cat ./prompts/music.txt). Save result to ${OUTPUT_DIR}/audio/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
       - name: Generate 3D Unicorn Model
+        timeout-minutes: 15
         run: |
           echo "🦄 Generating 3D unicorn model..."
-          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui MCP. $(cat ./prompts/unicorn.txt). Save result to ./assets/models/"
+          echo "📁 Output directory: ${OUTPUT_DIR}/models/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui MCP. $(cat ./prompts/unicorn.txt). Save result to ${OUTPUT_DIR}/models/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
       - name: Check Assets Generation
         id: check-assets
         run: |
-          if [ -f "./assets/backgrounds/*.png" ] && [ -f "./assets/audio/*.wav" ] && [ -f "./assets/models/*.glb" ]; then
+          echo "🔍 Checking generated assets in ${OUTPUT_DIR}..."
+          ls -la ${OUTPUT_DIR}/
+          if [ -n "$(find ${OUTPUT_DIR}/backgrounds -name '*.png' -o -name '*.jpg' 2>/dev/null)" ] && \
+             [ -n "$(find ${OUTPUT_DIR}/audio -name '*.wav' -o -name '*.mp3' 2>/dev/null)" ] && \
+             [ -n "$(find ${OUTPUT_DIR}/models -name '*.glb' -o -name '*.obj' 2>/dev/null)" ]; then
+            echo "✅ All assets generated successfully"
             echo "success=true" >> $GITHUB_OUTPUT
           else
+            echo "❌ Some assets missing"
             echo "success=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Upload Assets
         uses: actions/upload-artifact@v4
         with:
-          name: generated-assets
-          path: assets/
+          name: generated-assets-${{ steps.setup-dirs.outputs.output-dir }}
+          path: ${{ steps.setup-dirs.outputs.output-dir }}/
 
   process-assets:
     needs: generate-assets
