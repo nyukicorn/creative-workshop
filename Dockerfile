@@ -4,6 +4,7 @@ FROM node:18-slim
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
+    procps \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user with home directory
