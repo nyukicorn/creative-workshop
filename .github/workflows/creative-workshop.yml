@@ -41,10 +41,14 @@ jobs:
         run: |
           TIMESTAMP=$(date +%Y%m%d_%H%M%S)
           OUTPUT_DIR="./assets/${TIMESTAMP}"
+          ABSOLUTE_OUTPUT_DIR="$(pwd)/assets/${TIMESTAMP}"
           echo "output-dir=${OUTPUT_DIR}" >> $GITHUB_OUTPUT
           echo "OUTPUT_DIR=${OUTPUT_DIR}" >> $GITHUB_ENV
+          echo "ABSOLUTE_OUTPUT_DIR=${ABSOLUTE_OUTPUT_DIR}" >> $GITHUB_ENV
           mkdir -p ${OUTPUT_DIR}/{backgrounds,audio,models,optimized}
           echo "📁 Created output directory: ${OUTPUT_DIR}"
+          echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}"
+          echo "🌐 Current working directory: $(pwd)"
       
       - name: Install Claude Code SDK
         run: |
@@ -63,7 +67,8 @@ jobs:
         run: |
           echo "🌅 Generating 360 degree panorama background..."
           echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using Kamui MCP. $(cat ./prompts/panorama.txt). Save result to ${OUTPUT_DIR}/backgrounds/"
+          echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using Kamui MCP. $(cat ./prompts/panorama.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -79,7 +84,8 @@ jobs:
         run: |
           echo "🎵 Generating background music..."
           echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
-          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using Kamui MCP. $(cat ./prompts/music.txt). Save result to ${OUTPUT_DIR}/audio/"
+          echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/audio/"
+          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using Kamui MCP. $(cat ./prompts/music.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/audio/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -95,7 +101,8 @@ jobs:
         run: |
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui MCP. $(cat ./prompts/unicorn.txt). Save result to ${OUTPUT_DIR}/models/"
+          echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/models/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui MCP. $(cat ./prompts/unicorn.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/models/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
