@@ -67,7 +67,7 @@ jobs:
           echo "🌅 Generating 360 degree panorama background..."
           echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
+          claude --auto-approve --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -83,7 +83,7 @@ jobs:
           echo "🎵 Generating background music..."
           echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/audio/"
-          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
+          claude --auto-approve --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -99,7 +99,7 @@ jobs:
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/models/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
+          claude --auto-approve --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
