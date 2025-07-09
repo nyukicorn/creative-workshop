@@ -71,6 +71,12 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             claude --dangerously-skip-permissions --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
+          
+          echo "📦 Moving generated files from temp directories..."
+          docker run --rm \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c "find /tmp/ /home/claude/ -name '*.png' -o -name '*panorama*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\" && break; fi; done"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -91,6 +97,12 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             claude --dangerously-skip-permissions --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
+          
+          echo "📦 Moving generated files from temp directories..."
+          docker run --rm \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c "find /tmp/ /home/claude/ -name '*.wav' -o -name '*music*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\" && break; fi; done"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -101,7 +113,7 @@ jobs:
           sleep 3
       
       - name: Generate 3D Unicorn Model
-        timeout-minutes: 8
+        timeout-minutes: 12
         run: |
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
@@ -111,6 +123,12 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             claude --dangerously-skip-permissions --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
+          
+          echo "📦 Moving generated files from temp directories..."
+          docker run --rm \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c "find /tmp/ /home/claude/ -name '*.glb' -o -name '*unicorn*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\" && break; fi; done"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
