@@ -76,7 +76,18 @@ jobs:
           docker run --rm \
             -v $(pwd):/workspace \
             claude-workshop \
-            bash -c "find /tmp/ /home/claude/ -name '*.png' -o -name '*panorama*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png\" && break; fi; done"
+            bash -c "
+              echo 'Looking for generated files...'
+              find /tmp/ /home/claude/ -name '*.png' -o -name '*panorama*' 2>/dev/null | head -5
+              if [ -f /tmp/panorama_background.png ]; then
+                echo 'Found /tmp/panorama_background.png, copying...'
+                cp /tmp/panorama_background.png ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png
+                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png
+                echo 'Successfully moved panorama background'
+              else
+                echo 'No panorama file found in /tmp/'
+              fi
+            "
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -128,7 +139,23 @@ jobs:
           docker run --rm \
             -v $(pwd):/workspace \
             claude-workshop \
-            bash -c "find /tmp/ /home/claude/ -name '*.glb' -o -name '*unicorn*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb\" && break; fi; done"
+            bash -c "
+              echo 'Looking for generated 3D files...'
+              find /tmp/ /home/claude/ -name '*.glb' -o -name '*unicorn*' 2>/dev/null | head -5
+              if [ -f /tmp/unicorn_model.glb ]; then
+                echo 'Found /tmp/unicorn_model.glb, copying...'
+                cp /tmp/unicorn_model.glb ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
+                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
+                echo 'Successfully moved unicorn model'
+              elif [ -f /tmp/unicorn_model_pbr.glb ]; then
+                echo 'Found /tmp/unicorn_model_pbr.glb, copying...'
+                cp /tmp/unicorn_model_pbr.glb ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
+                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
+                echo 'Successfully moved unicorn PBR model'
+              else
+                echo 'No unicorn GLB file found in /tmp/'
+              fi
+            "
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
