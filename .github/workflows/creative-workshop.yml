@@ -70,7 +70,7 @@ jobs:
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using Kamui Code. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
+            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
           
           echo "📦 Moving generated files from temp directories..."
           docker run --rm \
@@ -96,7 +96,7 @@ jobs:
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using Kamui Code. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
+            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
           
           echo "📦 Moving generated files from temp directories..."
           docker run --rm \
@@ -122,7 +122,7 @@ jobs:
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui Code. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
+            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
           
           echo "📦 Moving generated files from temp directories..."
           docker run --rm \
