@@ -50,8 +50,16 @@ jobs:
         run: |
           npm install -g @anthropic-ai/claude-code
       
+      - name: Reset MCP Before Background Generation
+        run: |
+          echo "🔄 Resetting MCP connections..."
+          pkill -f "kamui-code-mcp" || true
+          pkill -f "claude" || true
+          sleep 3
+          echo "✅ MCP connections reset"
+      
       - name: Generate 360 Panorama Background  
-        timeout-minutes: 15
+        timeout-minutes: 8
         run: |
           echo "🌅 Generating 360 degree panorama background..."
           echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
@@ -59,8 +67,15 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
+      - name: Reset MCP After Background Generation
+        run: |
+          echo "🔄 Resetting MCP connections..."
+          pkill -f "kamui-code-mcp" || true
+          pkill -f "claude" || true
+          sleep 3
+      
       - name: Generate Background Music
-        timeout-minutes: 15
+        timeout-minutes: 8
         run: |
           echo "🎵 Generating background music..."
           echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
@@ -68,14 +83,28 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
+      - name: Reset MCP After Music Generation
+        run: |
+          echo "🔄 Resetting MCP connections..."
+          pkill -f "kamui-code-mcp" || true
+          pkill -f "claude" || true
+          sleep 3
+      
       - name: Generate 3D Unicorn Model
-        timeout-minutes: 15
+        timeout-minutes: 8
         run: |
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
           claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using Kamui MCP. $(cat ./prompts/unicorn.txt). Save result to ${OUTPUT_DIR}/models/"
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      
+      - name: Reset MCP After 3D Generation
+        run: |
+          echo "🔄 Resetting MCP connections..."
+          pkill -f "kamui-code-mcp" || true
+          pkill -f "claude" || true
+          sleep 3
       
       - name: Check Assets Generation
         id: check-assets
