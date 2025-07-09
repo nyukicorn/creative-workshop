@@ -67,7 +67,7 @@ jobs:
           echo "🌅 Generating 360 degree panorama background..."
           echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -83,7 +83,7 @@ jobs:
           echo "🎵 Generating background music..."
           echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/audio/"
-          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/audio/"
+          claude --mcp-config ./configs/mcp-config.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -99,7 +99,7 @@ jobs:
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/models/"
-          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). Save result to ${ABSOLUTE_OUTPUT_DIR}/models/"
+          claude --mcp-config ./configs/mcp-config.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -114,9 +114,20 @@ jobs:
         run: |
           echo "🔍 Checking generated assets in ${OUTPUT_DIR}..."
           ls -la ${OUTPUT_DIR}/
-          if [ -n "$(find ${OUTPUT_DIR}/backgrounds -name '*.png' -o -name '*.jpg' 2>/dev/null)" ] && \
-             [ -n "$(find ${OUTPUT_DIR}/audio -name '*.wav' -o -name '*.mp3' 2>/dev/null)" ] && \
-             [ -n "$(find ${OUTPUT_DIR}/models -name '*.glb' -o -name '*.obj' 2>/dev/null)" ]; then
+          echo "🔍 Checking backgrounds directory..."
+          ls -la ${OUTPUT_DIR}/backgrounds/
+          echo "🔍 Checking audio directory..."
+          ls -la ${OUTPUT_DIR}/audio/
+          echo "🔍 Checking models directory..."
+          ls -la ${OUTPUT_DIR}/models/
+          
+          BACKGROUND_FILES=$(find ${OUTPUT_DIR}/backgrounds -name '*.png' -o -name '*.jpg' 2>/dev/null | wc -l)
+          AUDIO_FILES=$(find ${OUTPUT_DIR}/audio -name '*.wav' -o -name '*.mp3' 2>/dev/null | wc -l)
+          MODEL_FILES=$(find ${OUTPUT_DIR}/models -name '*.glb' -o -name '*.obj' 2>/dev/null | wc -l)
+          
+          echo "📊 Found: ${BACKGROUND_FILES} background files, ${AUDIO_FILES} audio files, ${MODEL_FILES} model files"
+          
+          if [ ${BACKGROUND_FILES} -gt 0 ] && [ ${AUDIO_FILES} -gt 0 ] && [ ${MODEL_FILES} -gt 0 ]; then
             echo "✅ All assets generated successfully"
             echo "success=true" >> $GITHUB_OUTPUT
           else
