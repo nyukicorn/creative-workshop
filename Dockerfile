@@ -6,8 +6,11 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user
-RUN groupadd -r claude && useradd -r -g claude claude
+# Create non-root user with home directory
+RUN groupadd -r claude && useradd -r -g claude -m claude
+
+# Set home directory permissions
+RUN chown -R claude:claude /home/claude
 
 # Install Claude Code SDK
 RUN npm install -g @anthropic-ai/claude-code@1.0.43
