@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "blender": {
+      "command": "node",
+      "args": ["/Users/nukuiyuki/Dev/mcp-tools/Blender/dist/index.js"],
+      "env": {
+        "BLENDER_PATH": "/Applications/Blender.app/Contents/MacOS/Blender"
+      }
+    }
+  }
+}
