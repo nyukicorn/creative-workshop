@@ -251,7 +251,7 @@ jobs:
       - name: Upload Assets
         uses: actions/upload-artifact@v4
         with:
-          name: generated-assets-${{ steps.setup-dirs.outputs.output-dir }}
+          name: generated-assets-${{ steps.setup-dirs.outputs.timestamp }}
           path: ${{ steps.setup-dirs.outputs.output-dir }}/
 
   process-assets:
