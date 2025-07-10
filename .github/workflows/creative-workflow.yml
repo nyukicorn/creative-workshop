@@ -40,12 +40,21 @@ jobs:
         
     - name: Setup MCP Config
       run: |
-        mkdir -p ~/.claude
-        cp configs/mcp-kamuicode.json ~/.claude/mcp-config.json
-        echo "MCP設定内容確認:"
-        cat ~/.claude/mcp-config.json
-        echo "Kamui Code MCP URLのみを使用することを確認"
-        grep -q "mcp-veo3-fast-only" ~/.claude/mcp-config.json && echo "✅ Kamui Code MCP確認済み" || echo "❌ 設定エラー"
+        echo "📁 リポジトリの設定ファイル確認"
+        ls -la configs/
+        
+        echo "📁 ホームディレクトリの準備"
+        mkdir -p $HOME/.claude
+        cp configs/mcp-kamuicode.json $HOME/.claude/mcp-config.json
+        
+        echo "✅ MCP設定ファイル配置確認"
+        ls -la $HOME/.claude/
+        
+        echo "📄 MCP設定内容確認:"
+        cat $HOME/.claude/mcp-config.json
+        
+        echo "🔍 Kamui Code MCP URLのみを使用することを確認"
+        grep -q "mcp-veo3-fast-only" $HOME/.claude/mcp-config.json && echo "✅ Kamui Code MCP確認済み" || echo "❌ 設定エラー"
         
     - name: Phase 1 - Generate Assets with Claude Code + Kamui MCP
       env:
@@ -55,10 +64,10 @@ jobs:
         mkdir -p assets/panorama assets/audio
         
         echo "🖼️ Imagen3でパノラマ画像生成中..."
-        claude --mcp-config=~/.claude/mcp-config.json "Kamui Code MCPのImagen3を使用して、「神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式」というテーマで1024x1024サイズの画像を現在のディレクトリのassets/panorama/panorama_landscape.pngに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
+        claude --mcp-config=$HOME/.claude/mcp-config.json "Kamui Code MCPのImagen3を使用して、「神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式」というテーマで1024x1024サイズの画像を現在のディレクトリのassets/panorama/panorama_landscape.pngに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
         
         echo "🎵 Lyriaでアンビエント音楽生成中..."
-        claude --mcp-config=~/.claude/mcp-config.json "Kamui Code MCPのLyriaを使用して、「森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能」というテーマで音楽を現在のディレクトリのassets/audio/ambient_background.wavに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
+        claude --mcp-config=$HOME/.claude/mcp-config.json "Kamui Code MCPのLyriaを使用して、「森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能」というテーマで音楽を現在のディレクトリのassets/audio/ambient_background.wavに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
         
         # 生成結果確認
         echo "📊 生成結果確認"
