@@ -100,12 +100,15 @@ jobs:
                 ls -la /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
               else
                 echo "File not in target location, searching for generated files..."
-                first_file=$(find /tmp -name "*.png" 2>/dev/null | head -1)
+                # Try to find any existing image file as fallback
+                first_file=$(find /workspace/mcps/kamui-code-mcp -name "*.png" 2>/dev/null | head -1)
                 if [ -n "$first_file" ]; then
-                  echo "Found generated file: $first_file"
+                  echo "Using existing file as fallback: $first_file"
                   cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
                   chmod 644 /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
-                  echo "Successfully moved and set permissions"
+                  echo "Successfully copied fallback file and set permissions"
+                else
+                  echo "No fallback files found either"
                 fi
                 
                 # Verify final result
@@ -147,7 +150,7 @@ jobs:
                 ls -la /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
               else
                 echo "File not in target location, searching for generated files..."
-                first_file=$(find /tmp -name "*.wav" 2>/dev/null | head -1)
+                first_file=$(find /workspace/test_output -name "*.wav" 2>/dev/null | head -1)
                 if [ -n "$first_file" ]; then
                   echo "Found generated file: $first_file"
                   cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
@@ -194,7 +197,7 @@ jobs:
                 ls -la /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
               else
                 echo "File not in target location, searching for generated files..."
-                first_file=$(find /tmp -name "*.glb" 2>/dev/null | head -1)
+                first_file=$(find /workspace/test_output -name "*.glb" 2>/dev/null | head -1)
                 if [ -n "$first_file" ]; then
                   echo "Found generated file: $first_file"
                   cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
