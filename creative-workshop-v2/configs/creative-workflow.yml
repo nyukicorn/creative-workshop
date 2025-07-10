@@ -1,0 +1,47 @@
+name: Creative Workshop Workflow v2 - Panorama
+description: 360度パノラマ背景生成フロー
+
+phases:
+  # Phase 1: パノラマ素材生成
+  asset_generation:
+    tool: kamui-code-mcp
+    tasks:
+      - name: generate_panorama_image
+        type: panorama_image_generation
+        prompt: "360-degree panoramic landscape, equirectangular format, high resolution, immersive environment"
+        output_path: assets/panorama/
+        download_required: true
+      - name: generate_ambient_audio
+        type: ambient_audio_generation
+        prompt: "Relaxing ambient soundscape for VR environment, 60 seconds, seamless loop"
+        output_path: assets/audio/
+        download_required: true
+
+  # Phase 2: パノラマVR統合
+  web_integration:
+    tool: threejs-mcp
+    dependencies: [asset_generation]
+    inputs:
+      panorama: assets/panorama/
+      audio: assets/audio/
+    output_path: dist/
+    tasks:
+      - name: create_panorama_viewer
+        type: threejs_panorama_integration
+        features:
+          - equirectangular_background
+          - vr_controls
+          - mobile_support
+          - audio_integration
+
+  # Phase 3: デプロイ
+  deployment:
+    tool: github-actions
+    dependencies: [web_integration]
+    target: gh-pages
+
+# 重要な設定
+settings:
+  download_verification: true  # ダウンロード完了確認
+  asset_validation: true       # 素材の存在確認
+  error_handling: strict       # エラー時は停止

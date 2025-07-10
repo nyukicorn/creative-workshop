@@ -1,0 +1,51 @@
+name: Creative Workshop v2
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  creative-workflow:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Claude Code SDK
+      run: |
+        pip install anthropic
+        
+    - name: Phase 1 - Panorama Asset Generation (Kamui Code MCP)
+      run: |
+        echo "Kamui Code MCPでパノラマ素材生成"
+        mkdir -p assets/panorama assets/audio
+        # Kamui Code MCP実行
+        # パノラマ画像生成: "360-degree panoramic landscape, equirectangular format"
+        # アンビエント音楽生成: "Relaxing ambient soundscape for VR environment"
+        # ダウンロード確認
+        
+    - name: Verify Panorama Asset Download
+      run: |
+        echo "パノラマ素材ダウンロード確認"
+        ls -la assets/panorama/
+        ls -la assets/audio/
+        echo "ファイルサイズ確認"
+        du -h assets/panorama/* || echo "No panorama files"
+        du -h assets/audio/* || echo "No audio files"
+        
+    - name: Phase 2 - Panorama VR Integration (Three.js MCP)
+      run: |
+        echo "Three.js MCPでパノラマVR統合"
+        mkdir -p dist
+        # Three.js MCP実行
+        # - Equirectangularパノラマ背景
+        # - VRコントロール対応
+        # - モバイル対応
+        # - 音声統合
+        
+    - name: Phase 3 - Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist

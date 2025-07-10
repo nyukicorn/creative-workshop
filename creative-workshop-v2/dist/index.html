@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Apple Scene - Three.js</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <div class="controls">
+            <button id="playButton">音楽再生</button>
+            <button id="pauseButton">一時停止</button>
+            <div class="info">
+                <p>マウスでドラッグして回転、ホイールでズーム</p>
+            </div>
+        </div>
+        <div id="scene-container"></div>
+        <audio id="bgMusic" loop>
+            <source src="../assets/audio/lyria_output_Rz0Lm9sHg.wav" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
