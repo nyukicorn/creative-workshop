@@ -148,6 +148,13 @@ jobs:
                     controls = new THREE.OrbitControls(camera, renderer.domElement);
                     controls.enableDamping = true;
                     controls.dampingFactor = 0.05;
+                    controls.enableZoom = true;
+                    controls.enablePan = false;
+                    controls.enableRotate = true;
+                    controls.rotateSpeed = 0.5;
+                    controls.zoomSpeed = 0.5;
+                    controls.minDistance = 1;
+                    controls.maxDistance = 100;
                     
                     // パノラマスフィア作成
                     const geometry = new THREE.SphereGeometry(500, 60, 40);
