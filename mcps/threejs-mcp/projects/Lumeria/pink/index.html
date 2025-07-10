@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumeria - Flower City</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .minimal-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .control-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div class="minimal-controls">
+        <button id="audioBtn" class="control-btn" title="Play/Pause Music">🎵</button>
+        <button id="nextBtn" class="control-btn" title="Next World" onclick="window.location.href='../aqua/index.html'">→</button>
+    </div>
+    
+    <audio id="bgMusic" loop>
+        <source src="../shared/lumeria-bgm.wav" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="lumeria-pink.js"></script>
+</body>
+</html>

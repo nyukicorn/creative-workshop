@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>パーティクル庭園テスト</title>
+    <style>
+        body { margin: 0; background: #000; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; z-index: 100; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h3>🌺 パーティクル庭園 🌺</h3>
+        <p>接続状態: <span id="status">未接続</span></p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Three.js基本設定
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // カメラ位置
+        camera.position.set(5, 5, 5);
+        camera.lookAt(0, 0, 0);
+        
+        // ライト
+        const light = new THREE.AmbientLight(0x404040, 0.5);
+        scene.add(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+        
+        // テスト用キューブ
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshLambertMaterial({color: 0x00ff00});
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        
+        // WebSocket接続
+        const ws = new WebSocket('ws://localhost:8082');
+        const statusEl = document.getElementById('status');
+        
+        ws.onopen = () => {
+            statusEl.textContent = '接続中';
+            statusEl.style.color = 'green';
+            console.log('WebSocket接続成功');
+        };
+        
+        ws.onmessage = (event) => {
+            const command = JSON.parse(event.data);
+            console.log('受信:', command);
+            handleCommand(command);
+        };
+        
+        ws.onerror = (error) => {
+            statusEl.textContent = 'エラー';
+            statusEl.style.color = 'red';
+            console.error('WebSocketエラー:', error);
+        };
+        
+        // コマンド処理
+        function handleCommand(command) {
+            console.log('処理中:', command.action);
+            if (command.action === 'createMagicDust') {
+                createMagicDust();
+            } else if (command.action === 'createFlowerParticles') {
+                createFlowerParticles(command);
+            } else if (command.action === 'createStemParticles') {
+                createStemParticles(command);
+            } else if (command.action === 'createFallingPetals') {
+                createFallingPetals(command);
+            } else if (command.action === 'createLeafParticles') {
+                createLeafParticles(command);
+            } else if (command.action === 'createGrassParticles') {
+                createGrassParticles(command);
+            } else {
+                console.log('未対応コマンド:', command.action);
+            }
+        }
+        
+        // 魔法の粉
+        function createMagicDust() {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            
+            // カメラの近くに大きなパーティクルを作成
+            for (let i = 0; i < 100; i++) {
+                positions.push(
+                    (Math.random() - 0.5) * 10,  // より狭い範囲
+                    Math.random() * 5,           // より低い高さ
+                    (Math.random() - 0.5) * 10
+                );
+                colors.push(1.0, 1.0, 1.0);     // 白色で統一
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 1.0,                       // 大きなサイズ
+                vertexColors: true,
+                sizeAttenuation: false           // 距離による縮小を無効
+            });
+            
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('✨ 魔法の粉を作成 - パーティクル数:', positions.length/3);
+            console.log('パーティクルの位置例:', positions.slice(0, 9));
+        }
+        
+        // 花パーティクル
+        function createFlowerParticles(command) {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color(command.color);
+            
+            for (let i = 0; i < 100; i++) {
+                const angle = (i / 100) * Math.PI * 2;
+                const radius = 0.5;
+                positions.push(
+                    command.position[0] + Math.cos(angle) * radius,
+                    command.position[1],
+                    command.position[2] + Math.sin(angle) * radius
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.1,
+                vertexColors: true
+            });
+            
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('🌸 花パーティクルを作成:', command.id);
+        }
+        
+        // 茎パーティクル
+        function createStemParticles(command) {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color(command.color);
+            const start = command.startPos;
+            const end = command.endPos;
+            
+            for (let i = 0; i <= 20; i++) {
+                const t = i / 20;
+                positions.push(
+                    start[0] + (end[0] - start[0]) * t,
+                    start[1] + (end[1] - start[1]) * t,
+                    start[2] + (end[2] - start[2]) * t
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({ size: 0.15, vertexColors: true });
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('🌿 茎パーティクルを作成:', command.id);
+        }
+        
+        // 散る花びら
+        function createFallingPetals(command) {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color(command.color);
+            const center = command.position;
+            
+            for (let i = 0; i < command.count; i++) {
+                positions.push(
+                    center[0] + (Math.random() - 0.5) * 2,
+                    center[1] + Math.random() * 2,
+                    center[2] + (Math.random() - 0.5) * 2
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({ size: 0.08, vertexColors: true });
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('🌸 散る花びらを作成:', command.id);
+        }
+        
+        // 葉パーティクル  
+        function createLeafParticles(command) {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color(command.color);
+            const center = command.position;
+            
+            for (let i = 0; i < 20; i++) {
+                positions.push(
+                    center[0] + (Math.random() - 0.5) * 0.5,
+                    center[1],
+                    center[2] + (Math.random() - 0.5) * 0.5
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({ size: 0.12, vertexColors: true });
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('🍃 葉パーティクルを作成:', command.id);
+        }
+        
+        // 草パーティクル
+        function createGrassParticles(command) {
+            const particles = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+            const color = new THREE.Color(command.color);
+            const center = command.position;
+            const density = command.density === 'dense' ? 30 : command.density === 'sparse' ? 10 : 20;
+            
+            for (let i = 0; i < density; i++) {
+                positions.push(
+                    center[0] + (Math.random() - 0.5) * 0.5,
+                    center[1] + Math.random() * 0.3,
+                    center[2] + (Math.random() - 0.5) * 0.5
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({ size: 0.08, vertexColors: true });
+            const points = new THREE.Points(particles, material);
+            scene.add(points);
+            console.log('🌱 草パーティクルを作成:', command.id);
+        }
+
+        // アニメーションループ
+        function animate() {
+            requestAnimationFrame(animate);
+            cube.rotation.x += 0.01;
+            cube.rotation.y += 0.01;
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // リサイズ対応
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

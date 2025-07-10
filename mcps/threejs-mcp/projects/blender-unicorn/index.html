@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦄 Blender → Three.js: Unicorn Gallery</title>
+    <style>
+        body { 
+            margin: 0; padding: 0; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; font-family: 'Arial', sans-serif; 
+        }
+        #container { width: 100%; height: 100vh; position: relative; }
+        #info { 
+            position: absolute; top: 15px; left: 15px; z-index: 100; 
+            background: rgba(0,0,0,0.8); padding: 15px; border-radius: 10px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-width: 300px;
+        }
+        #info h3 { margin: 0 0 10px 0; color: #ff6b9d; }
+        #model-selector {
+            margin: 10px 0; padding: 5px; background: rgba(255,255,255,0.1); 
+            border: none; border-radius: 5px; color: white; font-size: 14px;
+        }
+        #model-selector option { background: #333; color: white; }
+        #status { 
+            margin: 10px 0; padding: 8px; background: rgba(255,255,255,0.1); 
+            border-radius: 5px; font-weight: bold; font-size: 12px;
+        }
+        #loading { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            z-index: 99; text-align: center; background: rgba(0,0,0,0.8); 
+            padding: 30px; border-radius: 15px;
+        }
+        .spinner { 
+            border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid #ff6b9d; 
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; 
+            margin: 0 auto 20px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); }} 100% { transform: rotate(360deg); }}
+        canvas { display: block; }
+        .error { color: #ff4444; background: rgba(255,68,68,0.2); }
+        .success { color: #44ff88; background: rgba(68,255,136,0.2); }
+        .warning { color: #ffaa44; background: rgba(255,170,68,0.2); }
+        .controls { font-size: 11px; margin: 5px 0; }
+        .controls ul { margin: 0; padding-left: 15px; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h3>🦄 Blender → Three.js</h3>
+            <p><strong>Integrated Project</strong></p>
+            
+            <label for="model-selector">Choose Model:</label>
+            <select id="model-selector">
+                <option value="original_unicorn.glb">Original Unicorn (3.6MB)</option>
+                <option value="complete_unicorn.glb">Complete Unicorn (4.3MB)</option>
+                <option value="test_scene.glb">Test Scene (3KB)</option>
+            </select>
+            
+            <div class="controls">
+                <p><strong>Controls:</strong></p>
+                <ul>
+                    <li>🖱️ Mouse: Rotate</li>
+                    <li>🔄 Scroll: Zoom</li>
+                    <li>🎮 Right-click: Pan</li>
+                </ul>
+            </div>
+            
+            <div id="status" class="warning">Initializing...</div>
+        </div>
+        <div id="loading">
+            <div class="spinner"></div>
+            <h3>Loading 3D Model...</h3>
+            <p id="progress">0%</p>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        const statusElement = document.getElementById('status');
+        const loadingElement = document.getElementById('loading');
+        const progressElement = document.getElementById('progress');
+        const modelSelector = document.getElementById('model-selector');
+
+        let scene, camera, renderer, controls, currentModel, mixer, clock;
+
+        function updateStatus(message, type = 'warning') {
+            statusElement.textContent = message;
+            statusElement.className = type;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function initScene() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a2a40);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            controls.minDistance = 1;
+            controls.maxDistance = 50;
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x6b73c4, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x654321, 0.4);
+            scene.add(hemisphereLight);
+
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x3a3a5c, transparent: true, opacity: 0.7 
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Grid
+            const gridHelper = new THREE.GridHelper(20, 20, 0x6b73c4, 0x404064);
+            gridHelper.material.opacity = 0.4;
+            gridHelper.material.transparent = true;
+            scene.add(gridHelper);
+
+            // Animation clock
+            clock = new THREE.Clock();
+
+            updateStatus('Scene initialized', 'success');
+        }
+
+        function loadModel(modelName) {
+            // Remove current model
+            if (currentModel) {
+                scene.remove(currentModel);
+                currentModel = null;
+            }
+
+            loadingElement.style.display = 'block';
+            updateStatus(`Loading ${modelName}...`, 'warning');
+
+            const loader = new GLTFLoader();
+            const modelPath = `../blender-assets/${modelName}`;
+
+            loader.load(modelPath, 
+                (gltf) => {
+                    currentModel = gltf.scene;
+                    scene.add(currentModel);
+
+                    // Auto-fit camera
+                    const box = new THREE.Box3().setFromObject(currentModel);
+                    const center = box.getCenter(new THREE.Vector3());
+                    const size = box.getSize(new THREE.Vector3());
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const fov = camera.fov * (Math.PI / 180);
+                    let cameraZ = Math.abs(maxDim / 2 * Math.tan(fov * 2));
+                    
+                    camera.position.set(center.x + 3, center.y + 2, center.z + cameraZ * 1.5);
+                    camera.lookAt(center);
+                    controls.target.copy(center);
+
+                    // Enable shadows
+                    currentModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+
+                    loadingElement.style.display = 'none';
+                    
+                    // Handle animations
+                    if (gltf.animations && gltf.animations.length > 0) {
+                        mixer = new THREE.AnimationMixer(currentModel);
+                        gltf.animations.forEach((clip) => {
+                            mixer.clipAction(clip).play();
+                        });
+                        updateStatus(`✅ ${modelName} loaded! 🎬 ${gltf.animations.length} animations`, 'success');
+                    } else {
+                        mixer = null;
+                        updateStatus(`✅ ${modelName} loaded successfully!`, 'success');
+                    }
+                    
+                    console.log('Model loaded:', modelName);
+                    console.log('Center:', center, 'Size:', size);
+                },
+                (progress) => {
+                    if (progress.total > 0) {
+                        const percent = Math.round((progress.loaded / progress.total) * 100);
+                        progressElement.textContent = `${percent}%`;
+                        updateStatus(`Loading ${modelName}... ${percent}%`, 'warning');
+                    }
+                },
+                (error) => {
+                    loadingElement.style.display = 'none';
+                    updateStatus(`❌ Failed to load ${modelName}`, 'error');
+                    console.error('Load error:', error);
+                }
+            );
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update animations
+            if (mixer) {
+                mixer.update(clock.getDelta());
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Model selector change
+        modelSelector.addEventListener('change', (e) => {
+            loadModel(e.target.value);
+        });
+
+        // Initialize
+        updateStatus('Initializing Three.js scene...', 'warning');
+        initScene();
+        
+        // Load default model
+        loadModel(modelSelector.value);
+        
+        // Start animation loop
+        animate();
+        
+        console.log('Blender → Three.js integration initialized');
+    </script>
+</body>
+</html>

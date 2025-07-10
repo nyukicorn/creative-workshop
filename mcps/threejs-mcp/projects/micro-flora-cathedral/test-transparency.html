@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PNG透明度テスト</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #FF69B4;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .test-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .test-item {
+            text-align: center;
+        }
+        
+        .test-item img {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            border: 1px solid #333;
+        }
+        
+        .test-item h3 {
+            margin: 10px 0 5px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>PNG透明度テスト - 黒背景</h1>
+    <p>背景が黒いHTMLページでPNG画像を表示。透明部分が白く見えるかチェック</p>
+    
+    <div class="test-container">
+        <div class="test-item">
+            <h3>petal_sakura.png</h3>
+            <img src="petal_sakura.png" alt="桜の花びら">
+        </div>
+        
+        <div class="test-item">
+            <h3>petal_rose_pink.png</h3>
+            <img src="petal_rose_pink.png" alt="ピンクのバラ">
+        </div>
+        
+        <div class="test-item">
+            <h3>petal_ajisai.png</h3>
+            <img src="petal_ajisai.png" alt="紫陽花">
+        </div>
+        
+        <div class="test-item">
+            <h3>imagen_imagen-3.0-generate-002_20250705_020029_0.png</h3>
+            <img src="imagen_imagen-3.0-generate-002_20250705_020029_0.png" alt="新しい画像1">
+        </div>
+        
+        <div class="test-item">
+            <h3>imagen_imagen-3.0-generate-002_20250705_020331_0.png</h3>
+            <img src="imagen_imagen-3.0-generate-002_20250705_020331_0.png" alt="新しい画像2">
+        </div>
+        
+        <div class="test-item">
+            <h3>imagen_imagen-3.0-generate-002_20250705_020017_0.png</h3>
+            <img src="imagen_imagen-3.0-generate-002_20250705_020017_0.png" alt="新しい画像3">
+        </div>
+        
+        <div class="test-item">
+            <h3>rose1.png</h3>
+            <img src="rose1.png" alt="新しいバラ1">
+        </div>
+        
+        <div class="test-item">
+            <h3>rose2.png</h3>
+            <img src="rose2.png" alt="新しいバラ2">
+        </div>
+        
+        <div class="test-item">
+            <h3>rose3.png</h3>
+            <img src="rose3.png" alt="新しいバラ3">
+        </div>
+        
+        <div class="test-item">
+            <h3>rose4.png</h3>
+            <img src="rose4.png" alt="新しいバラ4">
+        </div>
+        
+        <div class="test-item">
+            <h3>rose.png</h3>
+            <img src="rose.png" alt="バラ画像">
+        </div>
+    </div>
+    
+    <div style="margin-top: 30px;">
+        <h2>判定基準：</h2>
+        <ul>
+            <li><strong>透明OK:</strong> 花びらの輪郭がなめらかで、背景は黒のまま</li>
+            <li><strong>透明NG:</strong> 花びらの周りに白い四角や白い縁が見える</li>
+        </ul>
+    </div>
+</body>
+</html>

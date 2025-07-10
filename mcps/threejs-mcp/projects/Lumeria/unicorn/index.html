@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦄 Lumeria × Unicorn - Magical World</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: opacity 0.3s ease;
+        }
+        
+        #info:hover {
+            opacity: 0.9;
+        }
+        
+        #info.minimized {
+            opacity: 0.3;
+        }
+        
+        #info h3 {
+            margin: 0 0 10px 0;
+            color: #ff6b9d;
+            background: linear-gradient(45deg, #ff6b9d, #aa88ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 12px;
+            text-align: center;
+            z-index: 100;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            opacity: 0.7;
+        }
+        
+        #controls:hover {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+        
+        #controls.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+            pointer-events: none;
+        }
+        
+        #model-selector {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        #model-selector option {
+            background: #333;
+            color: white;
+        }
+        
+        #status {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .success { color: #44ff88; background: rgba(68,255,136,0.2); }
+        .warning { color: #ffaa44; background: rgba(255,170,68,0.2); }
+        .error { color: #ff4444; background: rgba(255,68,68,0.2); }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div id="info">
+        <h3>🦄 Lumeria × Unicorn</h3>
+        <p><strong>Magical 360° Experience</strong></p>
+        
+        <label for="model-selector">Choose Unicorn:</label>
+        <select id="model-selector">
+            <option value="original_unicorn.glb">Original Unicorn (3.6MB)</option>
+            <option value="complete_unicorn.glb">Complete Unicorn (4.3MB)</option>
+        </select>
+        
+        <div id="status" class="warning">Loading magical world...</div>
+    </div>
+    <div id="controls">
+        <p><strong>🎮 Controls:</strong></p>
+        <p>Drag to rotate | Scroll to zoom | Click to toggle auto-rotation</p>
+        <p>🦄 Unicorn floats in the magical Lumeria world</p>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="lumeria-unicorn.js"></script>
+</body>
+</html>

@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌺✨ 妖精会社の完全パーティクル庭園 ✨🌼</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 350px;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .connected { color: #4ade80; }
+        .disconnected { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h3>🌺✨ 妖精会社の完全パーティクル庭園 ✨🌼</h3>
+            <p><strong>接続状態:</strong> <span id="connection-status" class="disconnected">未接続</span></p>
+            <p><strong>操作方法:</strong></p>
+            <ul>
+                <li>マウス: カメラ回転</li>
+                <li>ホイール: ズーム</li>
+                <li>Node.js経由でパーティクル制御</li>
+            </ul>
+            <p><strong>パーティクル花園:</strong></p>
+            <p>🌸 桜 💠 紫陽花 🌼 コスモス 🌺 椿 🌻 小花 🌱 草</p>
+        </div>
+        <div id="status">
+            WebSocket: <span id="ws-status" class="disconnected">切断中</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Three.js設定
+        let scene, camera, renderer, controls;
+        let objects = new Map();
+        let particles = new Map();
+        let ws = null;
+
+        // WebSocket接続
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket('ws://localhost:8082');
+                
+                ws.onopen = function() {
+                    console.log('WebSocket接続成功');
+                    document.getElementById('ws-status').textContent = '接続中';
+                    document.getElementById('ws-status').className = 'connected';
+                    document.getElementById('connection-status').textContent = '接続中';
+                    document.getElementById('connection-status').className = 'connected';
+                    sendSceneState();
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        let data = event.data;
+                        console.log('WebSocketメッセージ受信:', data);
+                        
+                        if (data instanceof Blob) {
+                            data.text().then(text => {
+                                const command = JSON.parse(text);
+                                handleCommand(command);
+                            });
+                        } else {
+                            const command = JSON.parse(data);
+                            handleCommand(command);
+                        }
+                    } catch (error) {
+                        console.error('コマンド解析エラー:', error, 'Data:', event.data);
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket切断');
+                    document.getElementById('ws-status').textContent = '切断中';
+                    document.getElementById('ws-status').className = 'disconnected';
+                    document.getElementById('connection-status').textContent = '未接続';
+                    document.getElementById('connection-status').className = 'disconnected';
+                    setTimeout(connectWebSocket, 3000);
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocketエラー:', error);
+                };
+                
+            } catch (error) {
+                console.error('WebSocket接続失敗:', error);
+                setTimeout(connectWebSocket, 3000);
+            }
+        }
+
+        // Three.js初期化
+        function init() {
+            // シーン作成
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            // カメラ作成
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(5, 5, 5);
+
+            // レンダラー作成
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // コントロール作成
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 2, 0);
+
+            // ライト設定
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // 地面
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x1a5d1a });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // WebSocket接続開始
+            connectWebSocket();
+            
+            // アニメーションループ開始
+            animate();
+        }
+
+        // パーティクルシステム作成
+        function createParticleSystem(id, positions, colors, size = 0.1) {
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: size,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+
+            const particleSystem = new THREE.Points(geometry, material);
+            particleSystem.name = id;
+            scene.add(particleSystem);
+            particles.set(id, particleSystem);
+            
+            console.log(`パーティクルシステム ${id} を作成: ${positions.length/3} 個のパーティクル`);
+            return particleSystem;
+        }
+
+        // コマンド処理
+        function handleCommand(command) {
+            console.log('受信コマンド:', command);
+            
+            switch(command.action) {
+                case 'removeObject':
+                    const removeObj = objects.get(command.id);
+                    if (removeObj) {
+                        scene.remove(removeObj);
+                        objects.delete(command.id);
+                    }
+                    break;
+                    
+                case 'removeParticles':
+                    const removeParticles = particles.get(command.id);
+                    if (removeParticles) {
+                        scene.remove(removeParticles);
+                        particles.delete(command.id);
+                    }
+                    break;
+
+                case 'createMagicDust':
+                    createMagicDust();
+                    break;
+
+                case 'createStemParticles':
+                    createStemParticles(command);
+                    break;
+
+                case 'createFlowerParticles':
+                    createFlowerParticles(command);
+                    break;
+
+                case 'createFallingPetals':
+                    createFallingPetals(command);
+                    break;
+
+                case 'createLeafParticles':
+                    createLeafParticles(command);
+                    break;
+
+                case 'createGrassParticles':
+                    createGrassParticles(command);
+                    break;
+            }
+            
+            sendSceneState();
+        }
+
+        // 魔法の光の粉
+        function createMagicDust() {
+            const positions = [];
+            const colors = [];
+            
+            for (let i = 0; i < 500; i++) {
+                positions.push(
+                    (Math.random() - 0.5) * 20,
+                    Math.random() * 10,
+                    (Math.random() - 0.5) * 20
+                );
+                
+                const hue = Math.random();
+                const color = new THREE.Color().setHSL(hue, 0.8, 0.8);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            const system = createParticleSystem('magic_dust', positions, colors, 0.2);
+            system.userData = { type: 'magic_dust', time: 0 };
+        }
+
+        // 茎パーティクル
+        function createStemParticles(command) {
+            const positions = [];
+            const colors = [];
+            const start = command.startPos;
+            const end = command.endPos;
+            const color = new THREE.Color(command.color);
+            
+            const segments = command.thickness === 'thick' ? 20 : command.thickness === 'medium' ? 15 : 10;
+            
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const x = start[0] + (end[0] - start[0]) * t;
+                const y = start[1] + (end[1] - start[1]) * t;
+                const z = start[2] + (end[2] - start[2]) * t;
+                
+                positions.push(x, y, z);
+                colors.push(color.r, color.g, color.b);
+                
+                // 太さによって追加パーティクル
+                if (command.thickness === 'thick') {
+                    positions.push(x + 0.05, y, z);
+                    positions.push(x - 0.05, y, z);
+                    colors.push(color.r, color.g, color.b);
+                    colors.push(color.r, color.g, color.b);
+                }
+            }
+            
+            createParticleSystem(command.id, positions, colors, 0.15);
+        }
+
+        // 花パーティクル
+        function createFlowerParticles(command) {
+            const positions = [];
+            const colors = [];
+            const center = command.position;
+            const color = new THREE.Color(command.color);
+            const petals = command.petalCount || 8;
+            
+            // 中心
+            positions.push(center[0], center[1], center[2]);
+            colors.push(color.r * 1.2, color.g * 1.2, color.b * 1.2);
+            
+            // 花びら
+            for (let i = 0; i < petals; i++) {
+                const angle = (i / petals) * Math.PI * 2;
+                const radius = 0.3;
+                
+                for (let r = 0.1; r <= radius; r += 0.1) {
+                    const x = center[0] + Math.cos(angle) * r;
+                    const y = center[1];
+                    const z = center[2] + Math.sin(angle) * r;
+                    
+                    positions.push(x, y, z);
+                    colors.push(color.r, color.g, color.b);
+                }
+            }
+            
+            createParticleSystem(command.id, positions, colors, 0.1);
+        }
+
+        // 散る花びら
+        function createFallingPetals(command) {
+            const positions = [];
+            const colors = [];
+            const center = command.position;
+            const color = new THREE.Color(command.color);
+            const count = command.count || 100;
+            
+            for (let i = 0; i < count; i++) {
+                positions.push(
+                    center[0] + (Math.random() - 0.5) * 2,
+                    center[1] + Math.random() * 2,
+                    center[2] + (Math.random() - 0.5) * 2
+                );
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            const system = createParticleSystem(command.id, positions, colors, 0.08);
+            system.userData = { type: 'falling_petals', time: 0, originalPositions: positions.slice() };
+        }
+
+        // 葉パーティクル
+        function createLeafParticles(command) {
+            const positions = [];
+            const colors = [];
+            const center = command.position;
+            const color = new THREE.Color(command.color);
+            const size = command.size === 'large' ? 0.5 : 0.3;
+            
+            // 葉の形状
+            for (let i = 0; i < 20; i++) {
+                const t = i / 20;
+                const x = center[0] + (t - 0.5) * size;
+                const y = center[1];
+                const z = center[2] + Math.sin(t * Math.PI) * size * 0.5;
+                
+                positions.push(x, y, z);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            createParticleSystem(command.id, positions, colors, 0.12);
+        }
+
+        // 草パーティクル
+        function createGrassParticles(command) {
+            const positions = [];
+            const colors = [];
+            const center = command.position;
+            const color = new THREE.Color(command.color);
+            const density = command.density === 'dense' ? 30 : command.density === 'sparse' ? 10 : 20;
+            
+            for (let i = 0; i < density; i++) {
+                const x = center[0] + (Math.random() - 0.5) * 0.5;
+                const y = center[1] + Math.random() * 0.3;
+                const z = center[2] + (Math.random() - 0.5) * 0.5;
+                
+                positions.push(x, y, z);
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            createParticleSystem(command.id, positions, colors, 0.08);
+        }
+
+        // シーン状態送信
+        function sendSceneState() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const state = {
+                    timestamp: Date.now(),
+                    data: Array.from(objects.entries()).map(([id, obj]) => ({
+                        id,
+                        type: obj.userData?.type || 'unknown',
+                        position: [obj.position.x, obj.position.y, obj.position.z]
+                    }))
+                };
+                ws.send(JSON.stringify(state));
+            }
+        }
+
+        // アニメーションループ
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // パーティクルアニメーション
+            particles.forEach(system => {
+                if (system.userData?.type === 'magic_dust') {
+                    system.userData.time += 0.01;
+                    system.rotation.y += 0.005;
+                    
+                    const positions = system.geometry.attributes.position.array;
+                    for (let i = 1; i < positions.length; i += 3) {
+                        positions[i] += Math.sin(system.userData.time + i) * 0.005;
+                    }
+                    system.geometry.attributes.position.needsUpdate = true;
+                }
+                
+                if (system.userData?.type === 'falling_petals') {
+                    system.userData.time += 0.01;
+                    const positions = system.geometry.attributes.position.array;
+                    const originalPositions = system.userData.originalPositions;
+                    
+                    for (let i = 0; i < positions.length; i += 3) {
+                        positions[i] = originalPositions[i] + Math.sin(system.userData.time + i * 0.1) * 0.5;
+                        positions[i + 1] = originalPositions[i + 1] - (system.userData.time * 0.5) % 3;
+                        positions[i + 2] = originalPositions[i + 2] + Math.cos(system.userData.time + i * 0.1) * 0.3;
+                    }
+                    system.geometry.attributes.position.needsUpdate = true;
+                }
+            });
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // リサイズ対応
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>

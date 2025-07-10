@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌹💐 妖精会社 Bouquet Three.js Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000000; /* 完全に黒背景 */
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 300px;
+        }
+        #status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .connected { color: #4ade80; }
+        .disconnected { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h3>🌹💐 妖精会社 Bouquet Demo</h3>
+            <p><strong>接続状態:</strong> <span id="connection-status" class="disconnected">未接続</span></p>
+            <p><strong>操作方法:</strong></p>
+            <ul>
+                <li>マウス: カメラ回転</li>
+                <li>ホイール: ズーム</li>
+                <li>Claude Code経由でブーケ操作</li>
+            </ul>
+            <p><strong>ブーケテーマ:</strong></p>
+            <p>🌹 バラ 🌷 チューリップ 🌻 ひまわり 🌺 ハイビスカス</p>
+        </div>
+        <div id="status">
+            WebSocket: <span id="ws-status" class="disconnected">切断中</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Three.js設定
+        let scene, camera, renderer, controls;
+        let objects = new Map();
+        let ws = null;
+
+        // WebSocket接続
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket('ws://localhost:8083'); // 異なるポートを使用
+                
+                ws.onopen = function() {
+                    console.log('WebSocket接続成功');
+                    document.getElementById('ws-status').textContent = '接続中';
+                    document.getElementById('ws-status').className = 'connected';
+                    document.getElementById('connection-status').textContent = '接続中';
+                    document.getElementById('connection-status').className = 'connected';
+                    sendSceneState();
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        let data = event.data;
+                        console.log('Raw WebSocket data type:', typeof data, data);
+                        
+                        // Handle Blob data
+                        if (data instanceof Blob) {
+                            data.text().then(text => {
+                                const command = JSON.parse(text);
+                                console.log('WebSocketメッセージ受信 (from Blob):', command);
+                                handleCommand(command);
+                            });
+                        } else {
+                            const command = JSON.parse(data);
+                            console.log('WebSocketメッセージ受信:', command);
+                            handleCommand(command);
+                        }
+                    } catch (error) {
+                        console.error('コマンド解析エラー:', error, 'Data:', event.data);
+                    }
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket切断');
+                    document.getElementById('ws-status').textContent = '切断中';
+                    document.getElementById('ws-status').className = 'disconnected';
+                    document.getElementById('connection-status').textContent = '未接続';
+                    document.getElementById('connection-status').className = 'disconnected';
+                    setTimeout(connectWebSocket, 3000); // 3秒後に再接続
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocketエラー:', error);
+                };
+                
+            } catch (error) {
+                console.error('WebSocket接続失敗:', error);
+                setTimeout(connectWebSocket, 3000);
+            }
+        }
+
+        // Three.js初期化
+        function init() {
+            // シーン作成
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000); // 黒背景
+
+            // カメラ作成
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(3, 3, 5);
+
+            // レンダラー作成
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // コントロール作成
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 1, 0); // ブーケの中心を見る
+
+            // ライト設定
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(3, 5, 3);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // 背景画像プレーン（16:9アスペクト比）
+            const planeWidth = 8;
+            const planeHeight = 4.5; // 16:9 = 8:4.5
+            const bgGeometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
+            let bgMaterial = new THREE.MeshLambertMaterial({ 
+                color: 0x888888,
+                transparent: true,
+                opacity: 0.1 // 最初から少し見える
+            });
+            const bgPlane = new THREE.Mesh(bgGeometry, bgMaterial);
+            bgPlane.position.set(0, 2, -2);
+            bgPlane.receiveShadow = true;
+            scene.add(bgPlane);
+            
+            // グローバル変数として保存
+            window.bgPlane = bgPlane;
+            window.planeWidth = planeWidth;
+            window.planeHeight = planeHeight;
+            
+            // 初期化時に自動で背景画像とパーティクルを設定
+            setTimeout(() => {
+                setBouquetBackground("http://localhost:8084/flower_bouquet.png");
+                console.log('🌸 初期化時に背景画像を自動設定しました');
+                
+                // 2秒後にパーティクル変換も自動実行
+                setTimeout(() => {
+                    convertImageToParticles("http://localhost:8084/flower_bouquet.png", 0.08, 0.05);
+                    console.log('🎆 初期化時にパーティクル変換を自動実行しました');
+                }, 2000);
+            }, 1000);
+            
+            // 背景画像適用関数
+            window.setBouquetBackground = function(imagePath) {
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(imagePath, function(texture) {
+                    if (window.bgPlane) {
+                        window.bgPlane.material = new THREE.MeshLambertMaterial({ 
+                            map: texture,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        console.log('ブーケ背景画像を更新しました:', imagePath);
+                    }
+                }, function(progress) {
+                    console.log('画像読み込み中:', (progress.loaded / progress.total * 100) + '%');
+                }, function(error) {
+                    console.error('画像読み込みエラー:', error);
+                });
+            };
+            
+            // 画像をパーティクルに変換する関数
+            window.convertImageToParticles = function(imagePath, particleSize = 0.1, spacing = 0.1) {
+                console.log('🎆 パーティクル変換開始:', imagePath);
+                
+                // 既存のパーティクルシステムがあれば削除
+                const existingParticles = scene.getObjectByName('particleSystem');
+                if (existingParticles) {
+                    scene.remove(existingParticles);
+                    console.log('🗑️ 既存のパーティクルを削除');
+                }
+                
+                // キャンバスを作成して画像を読み込み
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.crossOrigin = 'anonymous';
+                img.onload = function() {
+                    console.log(`📏 元画像サイズ: ${img.width}x${img.height}`);
+                    
+                    // 画像サイズを調整（より細かくするため）
+                    const maxSize = 200; // さらに大きく
+                    const scale = Math.min(maxSize / img.width, maxSize / img.height);
+                    canvas.width = Math.floor(img.width * scale);
+                    canvas.height = Math.floor(img.height * scale);
+                    
+                    console.log(`🖼️ 処理画像サイズ: ${canvas.width}x${canvas.height}`);
+                    
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const pixels = imageData.data;
+                    
+                    // パーティクルジオメトリとマテリアルを作成
+                    const particleGeometry = new THREE.BufferGeometry();
+                    const positions = [];
+                    const colors = [];
+                    let particleCount = 0;
+                    
+                    // ピクセルデータからパーティクルを生成（より細かく）
+                    for (let y = 0; y < canvas.height; y += 1) { // 1ピクセルごと（より細かく）
+                        for (let x = 0; x < canvas.width; x += 1) {
+                            const index = (y * canvas.width + x) * 4;
+                            const r = pixels[index] / 255;
+                            const g = pixels[index + 1] / 255;
+                            const b = pixels[index + 2] / 255;
+                            const a = pixels[index + 3] / 255;
+                            
+                            // イラスト部分のみパーティクル化（透明部分を除外）
+                            if (a > 0.5) { // アルファ値50%以上の不透明な部分のみ
+                                // 動的なプレーンサイズに合わせる
+                                const currentPlaneWidth = window.planeWidth || 8;
+                                const currentPlaneHeight = window.planeHeight || 4.5;
+                                // 位置計算を修正（より狭い範囲に）
+                                const px = ((x / canvas.width) - 0.5) * 2.0; // 8 → 2に縮小
+                                const py = ((y / canvas.height) - 0.5) * 1.2; // 4.5 → 1.2に縮小
+                                const pz = -1.7 + (Math.random() - 0.5) * 0.2; // カメラが見ている位置周辺
+                                
+                                positions.push(px, py, pz);
+                                // テスト用：すべてのパーティクルを明るい白にする
+                                colors.push(1.0, 1.0, 1.0); // 白色で強制テスト
+                                particleCount++;
+                                
+                                // カラーデバッグ（最初の10個のみ）
+                                if (particleCount <= 10) {
+                                    console.log(`パーティクル${particleCount}: RGB(${(r*255).toFixed(0)}, ${(g*255).toFixed(0)}, ${(b*255).toFixed(0)}) - 正規化RGB(${r.toFixed(3)}, ${g.toFixed(3)}, ${b.toFixed(3)})`);
+                                }
+                            }
+                        }
+                    }
+                    
+                    console.log(`✨ ${particleCount} 個のパーティクルを生成`);
+                    console.log(`🖼️ アルファ閾値: a > 0.5`);
+                    console.log(`📊 キャンバスサイズ: ${canvas.width}x${canvas.height}`);
+                    console.log(`🎯 最初の5個のピクセル値をチェック:`);
+                    
+                    // 最初の数ピクセルのアルファ値をチェック
+                    for (let i = 0; i < Math.min(25, canvas.width * canvas.height); i++) {
+                        const index = i * 4;
+                        const a = pixels[index + 3] / 255;
+                        if (i < 5) {
+                            console.log(`ピクセル${i}: alpha=${a.toFixed(3)}`);
+                        }
+                    }
+                    
+                    if (particleCount === 0) {
+                        console.error('❌ パーティクルが生成されませんでした');
+                        console.error('💡 アルファ閾値を下げて再試行します');
+                        
+                        // アルファ閾値を下げて再試行
+                        for (let y = 0; y < canvas.height; y += 1) {
+                            for (let x = 0; x < canvas.width; x += 1) {
+                                const index = (y * canvas.width + x) * 4;
+                                const a = pixels[index + 3] / 255;
+                                if (a > 0.1) { // より低い閾値で再試行
+                                    const r = pixels[index] / 255;
+                                    const g = pixels[index + 1] / 255;
+                                    const b = pixels[index + 2] / 255;
+                                    
+                                    const currentPlaneWidth = window.planeWidth || 8;
+                                    const currentPlaneHeight = window.planeHeight || 4.5;
+                                    const px = ((x / canvas.width) - 0.5) * currentPlaneWidth;
+                                    const py = -((y / canvas.height) - 0.5) * currentPlaneHeight;
+                                    const pz = (Math.random() - 0.5) * 0.5;
+                                    
+                                    positions.push(px, py, pz);
+                                    colors.push(r, g, b);
+                                    particleCount++;
+                                }
+                            }
+                        }
+                        console.log(`🔄 再試行結果: ${particleCount} 個のパーティクルを生成 (a > 0.1)`);
+                    }
+                    
+                    if (particleCount === 0) {
+                        console.error('❌ パーティクルが全く生成されませんでした');
+                        return;
+                    }
+                    
+                    // バッファ属性を設定
+                    particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    particleGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                    
+                    // パーティクルマテリアル（動作確認済み設定に変更）
+                    const particleMaterial = new THREE.PointsMaterial({
+                        size: particleSize * 3.0, // サイズを大きく
+                        vertexColors: true,
+                        transparent: false, // テスト用パーティクルと同じ設定
+                        // opacity: 1.0, // transparent: falseなので不要
+                        // sizeAttenuation: true,
+                        // alphaTest: 0.01,
+                        // blending: THREE.AdditiveBlending // 一旦無効化
+                    });
+                    
+                    // パーティクルシステムを作成
+                    const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+                    particleSystem.name = 'particleSystem';
+                    
+                    // 背景画像より手前に配置
+                    if (window.bgPlane) {
+                        particleSystem.position.copy(window.bgPlane.position);
+                        particleSystem.position.z = window.bgPlane.position.z + 0.3; // もっと手前
+                        particleSystem.rotation.copy(window.bgPlane.rotation);
+                        particleSystem.scale.copy(window.bgPlane.scale);
+                    } else {
+                        particleSystem.position.set(0, 2, -1.7);
+                    }
+                    
+                    scene.add(particleSystem);
+                    
+                    // パーティクルシステムの位置をデバッグ
+                    console.log('📍 パーティクルシステム位置:', particleSystem.position);
+                    console.log('📍 背景画像位置:', window.bgPlane ? window.bgPlane.position : 'なし');
+                    console.log('📏 パーティクルサイズ:', particleMaterial.size);
+                    console.log('🎨 ブレンドモード:', particleMaterial.blending === THREE.AdditiveBlending ? 'Additive' : 'Normal');
+                    
+                    // 🔍 シーン確認
+                    console.log('🔍 シーン内オブジェクト数:', scene.children.length);
+                    console.log('🔍 パーティクルシステムがシーンにあるか:', scene.children.includes(particleSystem));
+                    
+                    // 🔍 重要：5秒後にもう一度確認
+                    setTimeout(() => {
+                        const foundParticles = scene.getObjectByName('particleSystem');
+                        console.log('🔍 5秒後のパーティクルシステム:', foundParticles);
+                        console.log('🔍 visible状態:', foundParticles ? foundParticles.visible : 'なし');
+                        console.log('🔍 ジオメトリ:', foundParticles ? foundParticles.geometry : 'なし');
+                        console.log('🔍 マテリアル:', foundParticles ? foundParticles.material : 'なし');
+                        
+                        // 📹 カメラ情報をデバッグ
+                        console.log('📹 カメラ位置:', camera.position);
+                        console.log('📹 カメラが見ている方向:', controls.target);
+                        
+                        // 🎯 強制的にカメラをパーティクルに向ける
+                        console.log('🎯 カメラをパーティクルに向けます...');
+                        camera.position.set(0, 2, 2); // パーティクルの手前に移動
+                        controls.target.set(0, 2, -1.7); // パーティクルを直接見る
+                        controls.update();
+                        
+                        // テスト用図形を削除（成功したので不要）
+                        
+                        // 🚨 緊急テスト：シーンから直接取得
+                        const directParticles = scene.getObjectByName('particleSystem');
+                        console.log('🚨 シーンから直接取得:', directParticles);
+                        
+                        if (directParticles) {
+                            console.log('🚨 直接取得成功 - 位置を変更します');
+                            directParticles.position.set(1, 1, -1); // 明らかに違う位置
+                            directParticles.material.size = 5.0; // 巨大サイズ
+                            console.log('🚨 直接変更完了');
+                            
+                            // 🔍 ジオメトリの実データを確認
+                            const geo = directParticles.geometry;
+                            const posAttr = geo.attributes.position;
+                            const colorAttr = geo.attributes.color;
+                            
+                            console.log('🔍 position属性:', posAttr);
+                            console.log('🔍 color属性:', colorAttr);
+                            console.log('🔍 position.count:', posAttr ? posAttr.count : 'なし');
+                            console.log('🔍 color.count:', colorAttr ? colorAttr.count : 'なし');
+                            
+                            // 🔍 実際の配列の中身を確認
+                            if (posAttr && posAttr.array) {
+                                console.log('🔍 position配列の最初の9個:', Array.from(posAttr.array.slice(0, 9)));
+                                console.log('🔍 position配列の型:', posAttr.array.constructor.name);
+                                console.log('🔍 position配列の長さ:', posAttr.array.length);
+                            }
+                            
+                            if (colorAttr && colorAttr.array) {
+                                console.log('🔍 color配列の最初の9個:', Array.from(colorAttr.array.slice(0, 9)));
+                                console.log('🔍 color配列の型:', colorAttr.array.constructor.name);
+                                console.log('🔍 color配列の長さ:', colorAttr.array.length);
+                            }
+                            
+                            // 🎯 最終手段：ジオメトリを完全に再構築
+                            console.log('🎯 最終手段：ジオメトリ再構築テスト');
+                            
+                            // 新しいシンプルなジオメトリを作成
+                            const newGeo = new THREE.BufferGeometry();
+                            const simplePos = [
+                                0, 2, -1,   // 中央
+                                0.5, 2, -1, // 右
+                                -0.5, 2, -1 // 左
+                            ];
+                            const simpleColors = [
+                                1, 0, 0, // 赤
+                                0, 1, 0, // 緑  
+                                0, 0, 1  // 青
+                            ];
+                            
+                            newGeo.setAttribute('position', new THREE.Float32BufferAttribute(simplePos, 3));
+                            newGeo.setAttribute('color', new THREE.Float32BufferAttribute(simpleColors, 3));
+                            
+                            // パーティクルシステムのジオメトリを置き換え
+                            directParticles.geometry.dispose(); // 古いジオメトリを削除
+                            directParticles.geometry = newGeo;
+                            
+                            console.log('🎯 ジオメトリを3個のRGB粒子に置き換えました');
+                        } else {
+                            console.error('🚨 直接取得失敗！');
+                        }
+                        
+                        // 🌟 動作確認済みの方法で花束パーティクルを作成
+                        console.log('🌟 動作確認済みの方法で花束パーティクルを作成します');
+                        
+                        // 画像を読み込んでパーティクルデータを作成
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        const img = new Image();
+                        
+                        img.crossOrigin = 'anonymous';
+                        img.onload = function() {
+                            const maxSize = 300; // 超高解像度に
+                            const scale = Math.min(maxSize / img.width, maxSize / img.height);
+                            canvas.width = Math.floor(img.width * scale);
+                            canvas.height = Math.floor(img.height * scale);
+                            
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            const pixels = imageData.data;
+                            
+                            const positions = [];
+                            const colors = [];
+                            let count = 0;
+                            
+                            for (let y = 0; y < canvas.height; y += 1) { // 間引きを減らしてパーティクル数アップ
+                                for (let x = 0; x < canvas.width; x += 1) {
+                                    const index = (y * canvas.width + x) * 4;
+                                    const r = pixels[index] / 255;
+                                    const g = pixels[index + 1] / 255;
+                                    const b = pixels[index + 2] / 255;
+                                    const a = pixels[index + 3] / 255;
+                                    
+                                    if (a > 0.1) { // 元の条件に戻す
+                                        const px = ((x / canvas.width) - 0.5) * 8.0;
+                                        const py = 2 + ((0.5 - y / canvas.height) * 4.5); // Y位置を背景画像に合わせる
+                                        const pz = -2 + (Math.random() - 0.5) * 0.2;
+                                        
+                                        positions.push(px, py, pz);
+                                        colors.push(r, g, b); // 元の自然な色に戻す
+                                        count++;
+                                    }
+                                }
+                            }
+                            
+                            console.log(`🌟 ${count}個の花束パーティクルを準備`);
+                            
+                            // テスト用と同じ方法でパーティクルシステム作成
+                            const bouquetGeometry = new THREE.BufferGeometry();
+                            bouquetGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                            bouquetGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                            
+                            const bouquetMaterial = new THREE.PointsMaterial({
+                                size: 0.03, // サイズを半分に（0.06 → 0.03）
+                                vertexColors: true,
+                                transparent: false, // 光る効果を削除
+                                sizeAttenuation: true // 距離に応じてサイズ変化
+                            });
+                            
+                            const bouquetParticles = new THREE.Points(bouquetGeometry, bouquetMaterial);
+                            bouquetParticles.name = 'bouquetParticles';
+                            scene.add(bouquetParticles);
+                            
+                            console.log('🌟 花束パーティクル完成！');
+                        };
+                        
+                        img.src = "http://localhost:8084/flower_bouquet.png";
+                        
+                        // 🔍 重要：シーン内の全パーティクルシステムを確認
+                        console.log('🔍 シーン内の全パーティクルシステム:');
+                        scene.children.forEach((child, index) => {
+                            if (child.type === 'Points') {
+                                console.log(`  ${index}: ${child.name} - 位置:`, child.position, '- 可視:', child.visible);
+                                if (child.geometry && child.geometry.attributes.position) {
+                                    const count = child.geometry.attributes.position.array.length / 3;
+                                    console.log(`    パーティクル数: ${count}`);
+                                }
+                            }
+                        });
+                        
+                        // 🔵 元のパーティクルのデータを詳しく調査
+                        console.log('🔍 foundParticles:', foundParticles);
+                        console.log('🔍 foundParticles === null?', foundParticles === null);
+                        console.log('🔍 foundParticles === undefined?', foundParticles === undefined);
+                        
+                        if (foundParticles) {
+                            const geo = foundParticles.geometry;
+                            const mat = foundParticles.material;
+                            
+                            console.log('🔍 ジオメトリ詳細:');
+                            console.log('  - 位置データ長さ:', geo.attributes.position ? geo.attributes.position.array.length : 'なし');
+                            console.log('  - 色データ長さ:', geo.attributes.color ? geo.attributes.color.array.length : 'なし');
+                            console.log('  - 最初の3つの位置:', geo.attributes.position ? Array.from(geo.attributes.position.array.slice(0, 9)) : 'なし');
+                            console.log('  - 最初の3つの色:', geo.attributes.color ? Array.from(geo.attributes.color.array.slice(0, 9)) : 'なし');
+                            
+                            console.log('🔍 マテリアル詳細:');
+                            console.log('  - サイズ:', mat.size);
+                            console.log('  - vertexColors:', mat.vertexColors);
+                            console.log('  - transparent:', mat.transparent);
+                            console.log('  - opacity:', mat.opacity);
+                            
+                            // 🎯 決定的テスト：テスト用パーティクルと全く同じ位置に強制移動
+                            foundParticles.position.set(0, 0, 0); // テスト用と全く同じ位置
+                            foundParticles.material.size = 2.0; // テスト用より大きく
+                            
+                            // さらに：最初の少数パーティクルの位置を直接上書き
+                            const pos = foundParticles.geometry.attributes.position.array;
+                            const colors = foundParticles.geometry.attributes.color.array;
+                            
+                            // 最初の10個のパーティクルを目立つ位置に強制配置
+                            for (let i = 0; i < Math.min(30, pos.length); i += 3) {
+                                pos[i] = (i/3) * 0.3 - 1.5; // X: -1.5から1.5まで並べる
+                                pos[i+1] = 2; // Y: 固定
+                                pos[i+2] = -1.5; // Z: 固定
+                                
+                                // 色も強制的に赤にする
+                                colors[i/3*3] = 1.0; // R
+                                colors[i/3*3+1] = 0.0; // G
+                                colors[i/3*3+2] = 0.0; // B
+                            }
+                            
+                            foundParticles.geometry.attributes.position.needsUpdate = true;
+                            foundParticles.geometry.attributes.color.needsUpdate = true;
+                            
+                            console.log('🎯 最初の10個のパーティクルを赤色で一列に強制配置');
+                        }
+                        
+                    }, 5000);
+                    
+                    // 背景画像はそのまま（パーティクルが見えるはず）
+                    // if (window.bgPlane) {
+                    //     window.bgPlane.material.opacity = 0.5;
+                    // }
+                    
+                    console.log('🎆 パーティクル変換完了！背景画像の上にパーティクルを配置');
+                    
+                    // パーティクルアニメーション
+                    particleSystem.userData = { 
+                        originalPositions: positions.slice(),
+                        time: 0,
+                        rotating: true
+                    };
+                    objects.set('particleSystem', particleSystem);
+                };
+                
+                img.onerror = function(error) {
+                    console.error('❌ 画像読み込みエラー:', error);
+                };
+                
+                img.src = imagePath;
+            };
+
+            // 初期ブーケオブジェクト（花瓶）を削除
+
+            // WebSocket接続開始
+            connectWebSocket();
+            
+            // アニメーションループ開始
+            animate();
+        }
+
+        // ブーケオブジェクト追加
+        function addBouquetObject(id, type, position, color) {
+            let geometry;
+            
+            switch(type) {
+                case 'vase':
+                    // 花瓶（下が太い円柱）
+                    geometry = new THREE.CylinderGeometry(0.3, 0.5, 1, 16);
+                    break;
+                case 'rose':
+                    // バラ（複数の球体を組み合わせ）
+                    geometry = new THREE.SphereGeometry(0.2, 16, 16);
+                    break;
+                case 'tulip':
+                    // チューリップ（楕円体）
+                    geometry = new THREE.SphereGeometry(0.25, 12, 8);
+                    geometry.scale(0.8, 1.5, 0.8);
+                    break;
+                case 'sunflower':
+                    // ひまわり（平たい円）
+                    geometry = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
+                    break;
+                case 'hibiscus':
+                    // ハイビスカス（星型っぽく）
+                    geometry = new THREE.ConeGeometry(0.3, 0.2, 5);
+                    break;
+                case 'stem':
+                    // 茎（細い円柱）
+                    geometry = new THREE.CylinderGeometry(0.02, 0.02, 1.5, 8);
+                    break;
+                case 'leaf':
+                    // 葉っぱ（平たい楕円）
+                    geometry = new THREE.SphereGeometry(0.2, 12, 6);
+                    geometry.scale(2, 0.1, 1);
+                    break;
+                case 'ribbon':
+                    // リボン（薄い箱）
+                    geometry = new THREE.BoxGeometry(0.8, 0.05, 0.1);
+                    break;
+                default:
+                    geometry = new THREE.SphereGeometry(0.2, 16, 16);
+            }
+
+            const material = new THREE.MeshLambertMaterial({ color: color });
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.set(position[0], position[1], position[2]);
+            mesh.castShadow = true;
+            mesh.userData = { id, type, rotating: false, rotationSpeed: 0 };
+            
+            scene.add(mesh);
+            objects.set(id, mesh);
+            
+            sendSceneState();
+        }
+
+        // コマンド処理
+        function handleCommand(command) {
+            console.log('受信コマンド:', command);
+            
+            switch(command.action) {
+                case 'addObject':
+                    addBouquetObject(
+                        command.id || `object_${Date.now()}`,
+                        command.type || 'rose',
+                        command.position || [0, 1, 0],
+                        command.color || '#ff69b4'
+                    );
+                    break;
+                    
+                case 'moveObject':
+                    const moveObj = objects.get(command.id);
+                    if (moveObj) {
+                        moveObj.position.set(...command.position);
+                        sendSceneState();
+                    }
+                    break;
+                    
+                case 'removeObject':
+                    const removeObj = objects.get(command.id);
+                    if (removeObj) {
+                        scene.remove(removeObj);
+                        objects.delete(command.id);
+                        sendSceneState();
+                    }
+                    break;
+                    
+                case 'startRotation':
+                    const rotateObj = objects.get(command.id);
+                    if (rotateObj) {
+                        rotateObj.userData.rotating = true;
+                        rotateObj.userData.rotationSpeed = command.speed || 0.01;
+                    }
+                    break;
+                    
+                case 'stopRotation':
+                    const stopObj = objects.get(command.id);
+                    if (stopObj) {
+                        stopObj.userData.rotating = false;
+                        stopObj.userData.rotationSpeed = 0;
+                    }
+                    break;
+                    
+                case 'setBouquetBackground':
+                    if (command.imagePath) {
+                        setBouquetBackground(command.imagePath);
+                        console.log('ブーケ背景画像を設定:', command.imagePath);
+                    }
+                    break;
+                    
+                case 'convertToParticles':
+                    if (command.imagePath) {
+                        convertImageToParticles(command.imagePath, command.particleSize || 0.02, command.spacing || 0.05);
+                        console.log('画像をパーティクルに変換:', command.imagePath);
+                    }
+                    break;
+            }
+        }
+
+        // シーン状態送信
+        function sendSceneState() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const state = {
+                    timestamp: Date.now(),
+                    data: Array.from(objects.entries()).map(([id, obj]) => ({
+                        id,
+                        type: obj.userData.type,
+                        position: [obj.position.x, obj.position.y, obj.position.z],
+                        rotation: [obj.rotation.x, obj.rotation.y, obj.rotation.z],
+                        color: '#' + obj.material.color.getHexString(),
+                        rotating: obj.userData.rotating,
+                        rotationSpeed: obj.userData.rotationSpeed
+                    }))
+                };
+                ws.send(JSON.stringify(state));
+            }
+        }
+
+        // アニメーションループ
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 回転アニメーション
+            objects.forEach(obj => {
+                if (obj.userData.rotating) {
+                    obj.rotation.y += obj.userData.rotationSpeed;
+                }
+            });
+            
+            // パーティクルアニメーション
+            const particleSystem = scene.getObjectByName('particleSystem');
+            if (particleSystem && particleSystem.userData.rotating) {
+                particleSystem.userData.time += 0.01;
+                
+                // パーティクルを軽く揺らす
+                const positions = particleSystem.geometry.attributes.position.array;
+                const originalPositions = particleSystem.userData.originalPositions;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    positions[i] = originalPositions[i] + Math.sin(particleSystem.userData.time + i * 0.01) * 0.1;
+                    positions[i + 1] = originalPositions[i + 1] + Math.cos(particleSystem.userData.time + i * 0.01) * 0.05;
+                    positions[i + 2] = originalPositions[i + 2] + Math.sin(particleSystem.userData.time * 0.5 + i * 0.005) * 0.2;
+                }
+                
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+                
+                // パーティクル全体をゆっくり回転
+                particleSystem.rotation.y += 0.005;
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // リサイズ対応
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 初期化実行
+        init();
+    </script>
+</body>
+</html>
