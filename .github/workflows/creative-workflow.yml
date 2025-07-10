@@ -17,6 +17,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
     - name: Setup Python and Dependencies
       uses: actions/setup-python@v4
       with:
@@ -26,11 +31,12 @@ jobs:
       run: |
         pip install requests pillow
         
-        
     - name: Install Claude Code CLI
       run: |
-        npm install -g @anthropic/claude-code
-        which claude || echo "Claude not in PATH"
+        npm config get registry
+        npm cache clean --force
+        npm install -g @anthropic-ai/claude-code
+        which claude || { echo "❌ claude コマンドが見つかりません"; exit 1; }
         
     - name: Setup MCP Config
       run: |
