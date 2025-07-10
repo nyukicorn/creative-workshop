@@ -73,6 +73,17 @@ jobs:
             claude-workshop \
             bash -c "mkdir -p /workspace/${OUTPUT_DIR}/backgrounds && chmod 777 /workspace/${OUTPUT_DIR}/backgrounds"
           
+          echo "🧪 Testing file access between containers..."
+          docker run --rm --user claude \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c 'echo "Test file from first container" > /tmp/test_file.txt && echo "Created test file in /tmp" && ls -la /tmp/test_file.txt'
+          
+          docker run --rm --user claude \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c 'echo "Checking for test file in second container:" && ls -la /tmp/ && if [ -f /tmp/test_file.txt ]; then echo "Found test file!"; cat /tmp/test_file.txt; else echo "Test file NOT found in /tmp"; fi'
+          
           docker run --rm --user claude \
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
