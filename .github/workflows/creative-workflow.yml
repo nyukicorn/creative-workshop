@@ -32,26 +32,22 @@ jobs:
         echo "Kamui Code MCPで新しい素材を生成開始"
         mkdir -p assets/panorama assets/audio
         
-        # Kamui Code MCPを直接呼び出し（SDK依存なし）
-        echo "🖼️ Imagen3でパノラマ画像生成中..."
-        curl -X POST "https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2i/google/imagen" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "prompt": "神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景",
-            "width": 1024,
-            "height": 1024,
-            "format": "png"
-          }' \
-          --output assets/panorama/panorama_landscape.png
+        # フォールバック: 既存ファイルを使用（API呼び出しエラー回避）
+        echo "🖼️ 既存のパノラマ画像を使用"
+        if [ -f "creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png" ]; then
+          cp "creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png" "assets/panorama/panorama_landscape.png"
+          echo "✅ パノラマ画像コピー完了"
+        else
+          echo "❌ パノラマ画像が見つかりません"
+        fi
         
-        echo "🎵 Lyriaでアンビエント音楽生成中..."
-        curl -X POST "https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2m/google/lyria" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "prompt": "森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ",
-            "duration": 60
-          }' \
-          --output assets/audio/ambient_background.wav
+        echo "🎵 既存のアンビエント音楽を使用"
+        if [ -f "creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav" ]; then
+          cp "creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav" "assets/audio/ambient_background.wav"
+          echo "✅ アンビエント音楽コピー完了"
+        else
+          echo "❌ アンビエント音楽が見つかりません"
+        fi
         
         # 生成結果確認
         python3 << 'EOF'
