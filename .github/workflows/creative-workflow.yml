@@ -55,6 +55,11 @@ jobs:
             print("✅ パノラマ画像生成完了")
         else:
             print(f"❌ 画像生成エラー: {response.status_code}")
+            print(f"Content-Type: {response.headers.get('content-type')}")
+            print(f"Response body: {response.text}")
+            print(f"Request URL: {response.url}")
+            print(f"Request body: {json.dumps({'prompt': '神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式', 'width': 1024, 'height': 1024})}")
+            print(f"Headers: {response.headers}")
         PYTHON_SCRIPT
         
         echo "🎵 Lyriaで新しいアンビエント音楽生成中..."
@@ -77,6 +82,11 @@ jobs:
             print("✅ アンビエント音楽生成完了")
         else:
             print(f"❌ 音楽生成エラー: {response.status_code}")
+            print(f"Content-Type: {response.headers.get('content-type')}")
+            print(f"Response body: {response.text}")
+            print(f"Request URL: {response.url}")
+            print(f"Request body: {json.dumps({'prompt': '森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能', 'duration': 60})}")
+            print(f"Headers: {response.headers}")
         PYTHON_SCRIPT
         
         # 生成結果確認
