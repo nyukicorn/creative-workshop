@@ -66,28 +66,45 @@ jobs:
           echo "🌅 Generating 360 degree panorama background..."
           echo "📁 Output directory: ${OUTPUT_DIR}/backgrounds/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/backgrounds/"
-          docker run --rm \
+          
+          echo "🔧 Setting up directories and permissions..."
+          docker run --rm --user root \
+            -v $(pwd):/workspace \
+            claude-workshop \
+            bash -c "mkdir -p /workspace/${OUTPUT_DIR}/backgrounds && chmod 777 /workspace/${OUTPUT_DIR}/backgrounds"
+          
+          docker run --rm --user claude \
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to ${ABSOLUTE_OUTPUT_DIR}/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
-          
-          echo "📦 Moving generated files from temp directories..."
-          docker run --rm \
-            -v $(pwd):/workspace \
-            claude-workshop \
-            bash -c "
-              echo 'Looking for generated files...'
-              find /tmp/ /home/claude/ -name '*.png' -o -name '*panorama*' 2>/dev/null | head -5
-              if [ -f /tmp/panorama_background.png ]; then
-                echo 'Found /tmp/panorama_background.png, copying...'
-                cp /tmp/panorama_background.png ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png
-                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/backgrounds/panorama_background.png
-                echo 'Successfully moved panorama background'
+            bash -c 'echo "Generating background image with Kamui Code..."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to /workspace/'"${OUTPUT_DIR}"'/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
+              
+              echo "Searching for generated files in all locations..."
+              find /workspace /tmp /home/claude -name "*.png" -o -name "*panorama*" 2>/dev/null | head -10
+              
+              # Check if file exists in target location
+              if [ -f /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png ]; then
+                echo "Found panorama_background.png in target location"
+                ls -la /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
               else
-                echo 'No panorama file found in /tmp/'
-              fi
-            "
+                echo "File not in target location, searching for generated files..."
+                first_file=$(find /tmp -name "*.png" 2>/dev/null | head -1)
+                if [ -n "$first_file" ]; then
+                  echo "Found generated file: $first_file"
+                  cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
+                  chmod 644 /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
+                  echo "Successfully moved and set permissions"
+                fi
+                
+                # Verify final result
+                if [ -f /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png ]; then
+                  echo "File successfully moved to target location"
+                  ls -la /workspace/'"${OUTPUT_DIR}"'/backgrounds/panorama_background.png
+                else
+                  echo "Failed to locate any generated files"
+                fi
+              fi'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -103,17 +120,38 @@ jobs:
           echo "🎵 Generating background music..."
           echo "📁 Output directory: ${OUTPUT_DIR}/audio/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/audio/"
-          docker run --rm \
+          docker run --rm --user claude \
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to ${ABSOLUTE_OUTPUT_DIR}/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
-          
-          echo "📦 Moving generated files from temp directories..."
-          docker run --rm \
-            -v $(pwd):/workspace \
-            claude-workshop \
-            bash -c "find /tmp/ /home/claude/ -name '*.wav' -o -name '*music*' 2>/dev/null | head -5 | while read file; do if [ -f \"\$file\" ]; then echo \"Moving \$file to ${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\"; cp \"\$file\" \"${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\" && chmod 644 \"${ABSOLUTE_OUTPUT_DIR}/audio/background_music.wav\" && break; fi; done"
+            bash -c 'echo "Generating background music with Kamui Code..."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to /workspace/'"${OUTPUT_DIR}"'/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
+              
+              echo "Searching for generated audio files in all locations..."
+              find /workspace /tmp /home/claude -name "*.wav" -o -name "*music*" 2>/dev/null | head -10
+              
+              # Check if file exists in target location
+              if [ -f /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav ]; then
+                echo "Found background_music.wav in target location"
+                ls -la /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
+              else
+                echo "File not in target location, searching for generated files..."
+                first_file=$(find /tmp -name "*.wav" 2>/dev/null | head -1)
+                if [ -n "$first_file" ]; then
+                  echo "Found generated file: $first_file"
+                  cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
+                  chmod 644 /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
+                  echo "Successfully moved and set permissions"
+                fi
+                
+                # Verify final result
+                if [ -f /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav ]; then
+                  echo "Audio file successfully moved to target location"
+                  ls -la /workspace/'"${OUTPUT_DIR}"'/audio/background_music.wav
+                else
+                  echo "Failed to locate any generated audio files"
+                fi
+              fi'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
@@ -129,33 +167,38 @@ jobs:
           echo "🦄 Generating 3D unicorn model..."
           echo "📁 Output directory: ${OUTPUT_DIR}/models/"
           echo "📍 Absolute path: ${ABSOLUTE_OUTPUT_DIR}/models/"
-          docker run --rm \
+          docker run --rm --user claude \
             -v $(pwd):/workspace \
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
-            claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to ${ABSOLUTE_OUTPUT_DIR}/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
-          
-          echo "📦 Moving generated files from temp directories..."
-          docker run --rm \
-            -v $(pwd):/workspace \
-            claude-workshop \
-            bash -c "
-              echo 'Looking for generated 3D files...'
-              find /tmp/ /home/claude/ -name '*.glb' -o -name '*unicorn*' 2>/dev/null | head -5
-              if [ -f /tmp/unicorn_model.glb ]; then
-                echo 'Found /tmp/unicorn_model.glb, copying...'
-                cp /tmp/unicorn_model.glb ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
-                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
-                echo 'Successfully moved unicorn model'
-              elif [ -f /tmp/unicorn_model_pbr.glb ]; then
-                echo 'Found /tmp/unicorn_model_pbr.glb, copying...'
-                cp /tmp/unicorn_model_pbr.glb ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
-                chmod 644 ${ABSOLUTE_OUTPUT_DIR}/models/unicorn_model.glb
-                echo 'Successfully moved unicorn PBR model'
+            bash -c 'echo "Generating 3D unicorn model with Kamui Code..."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to /workspace/'"${OUTPUT_DIR}"'/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
+              
+              echo "Searching for generated 3D files in all locations..."
+              find /workspace /tmp /home/claude -name "*.glb" -o -name "*unicorn*" 2>/dev/null | head -10
+              
+              # Check if file exists in target location
+              if [ -f /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb ]; then
+                echo "Found unicorn_model.glb in target location"
+                ls -la /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
               else
-                echo 'No unicorn GLB file found in /tmp/'
-              fi
-            "
+                echo "File not in target location, searching for generated files..."
+                first_file=$(find /tmp -name "*.glb" 2>/dev/null | head -1)
+                if [ -n "$first_file" ]; then
+                  echo "Found generated file: $first_file"
+                  cp "$first_file" /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
+                  chmod 644 /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
+                  echo "Successfully moved and set permissions"
+                fi
+                
+                # Verify final result
+                if [ -f /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb ]; then
+                  echo "3D model file successfully moved to target location"
+                  ls -la /workspace/'"${OUTPUT_DIR}"'/models/unicorn_model.glb
+                else
+                  echo "Failed to locate any generated 3D model files"
+                fi
+              fi'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       
