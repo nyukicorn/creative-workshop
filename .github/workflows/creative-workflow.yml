@@ -24,7 +24,7 @@ jobs:
     
     - name: Install Dependencies
       run: |
-        pip install pillow
+        pip install requests pillow
         
         
     - name: Phase 1 - Generate Assets with Kamui Code MCP
@@ -32,22 +32,52 @@ jobs:
         echo "Kamui Code MCPで新しい素材を生成開始"
         mkdir -p assets/panorama assets/audio
         
-        # フォールバック: 既存ファイルを使用（API呼び出しエラー回避）
-        echo "🖼️ 既存のパノラマ画像を使用"
-        if [ -f "creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png" ]; then
-          cp "creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png" "assets/panorama/panorama_landscape.png"
-          echo "✅ パノラマ画像コピー完了"
-        else
-          echo "❌ パノラマ画像が見つかりません"
-        fi
+        # Kamui Code MCPで新しい素材を実際に生成
+        echo "🖼️ Imagen3で新しいパノラマ画像生成中..."
+        python3 << 'PYTHON_SCRIPT'
+        import requests
+        import json
         
-        echo "🎵 既存のアンビエント音楽を使用"
-        if [ -f "creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav" ]; then
-          cp "creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav" "assets/audio/ambient_background.wav"
-          echo "✅ アンビエント音楽コピー完了"
-        else
-          echo "❌ アンビエント音楽が見つかりません"
-        fi
+        # Imagen3 API呼び出し
+        response = requests.post(
+            'https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2i/google/imagen',
+            json={
+                'prompt': '神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式',
+                'width': 1024,
+                'height': 1024
+            },
+            timeout=120
+        )
+        
+        if response.status_code == 200:
+            with open('assets/panorama/panorama_landscape.png', 'wb') as f:
+                f.write(response.content)
+            print("✅ パノラマ画像生成完了")
+        else:
+            print(f"❌ 画像生成エラー: {response.status_code}")
+        PYTHON_SCRIPT
+        
+        echo "🎵 Lyriaで新しいアンビエント音楽生成中..."
+        python3 << 'PYTHON_SCRIPT'
+        import requests
+        
+        # Lyria API呼び出し
+        response = requests.post(
+            'https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2m/google/lyria',
+            json={
+                'prompt': '森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能',
+                'duration': 60
+            },
+            timeout=180
+        )
+        
+        if response.status_code == 200:
+            with open('assets/audio/ambient_background.wav', 'wb') as f:
+                f.write(response.content)
+            print("✅ アンビエント音楽生成完了")
+        else:
+            print(f"❌ 音楽生成エラー: {response.status_code}")
+        PYTHON_SCRIPT
         
         # 生成結果確認
         python3 << 'EOF'
