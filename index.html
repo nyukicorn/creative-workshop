@@ -22,7 +22,7 @@
         <button onclick="enterVR()">VRモード</button>
     </div>
     <audio id="bgAudio" loop>
-        <source src="../assets/audio/ambient_background.wav" type="audio/wav">
+        <source src="./assets/audio/ambient_background.wav" type="audio/wav">
     </audio>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -48,7 +48,7 @@
             geometry.scale(-1, 1, 1); // 内側から見えるように反転
             
             const loader = new THREE.TextureLoader();
-            loader.load('../assets/panorama/panorama_landscape.png', function(texture) {
+            loader.load('./assets/panorama/panorama_landscape.png', function(texture) {
                 const material = new THREE.MeshBasicMaterial({ map: texture });
                 const sphere = new THREE.Mesh(geometry, material);
                 scene.add(sphere);
