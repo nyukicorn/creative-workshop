@@ -27,15 +27,19 @@ jobs:
         pip install requests pillow
         
         
-    - name: Install Claude Code
+    - name: Install Claude Code CLI
       run: |
-        curl -fsSL https://claude.ai/install.sh | sh
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        npm install -g @anthropic/claude-code
+        which claude || echo "Claude not in PATH"
         
     - name: Setup MCP Config
       run: |
         mkdir -p ~/.claude
         cp configs/mcp-kamuicode.json ~/.claude/mcp-config.json
+        echo "MCP設定内容確認:"
+        cat ~/.claude/mcp-config.json
+        echo "Kamui Code MCP URLのみを使用することを確認"
+        grep -q "mcp-veo3-fast-only" ~/.claude/mcp-config.json && echo "✅ Kamui Code MCP確認済み" || echo "❌ 設定エラー"
         
     - name: Phase 1 - Generate Assets with Claude Code + Kamui MCP
       env:
