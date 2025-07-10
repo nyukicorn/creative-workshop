@@ -89,7 +89,7 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             bash -c 'echo "Generating background image with Kamui Code..."
-              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to /workspace/'"${OUTPUT_DIR}"'/backgrounds/ with filename panorama_background.png. Make sure the file is actually saved to the filesystem."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 360-degree panoramic background image for a ${{ github.event.inputs.theme }} world using t2i-google-imagen3. $(cat ./prompts/panorama.txt). After generating, download the image and save it to /workspace/'"${OUTPUT_DIR}"'/backgrounds/ with filename panorama_background.png. IMPORTANT: Save directly to /workspace directory, not /tmp. IMPORTANT: Save directly to /workspace directory, not /tmp. Make sure the file is actually saved to the filesystem."
               
               echo "Searching for generated files in all locations..."
               find /workspace /tmp /home/claude -name "*.png" -o -name "*panorama*" 2>/dev/null | head -10
@@ -136,7 +136,7 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             bash -c 'echo "Generating background music with Kamui Code..."
-              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to /workspace/'"${OUTPUT_DIR}"'/audio/ with filename background_music.wav. Make sure the file is actually saved to the filesystem."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate background music for a ${{ github.event.inputs.theme }} themed 3D environment using t2m-google-lyria. $(cat ./prompts/music.txt). After generating, download the audio file and save it to /workspace/'"${OUTPUT_DIR}"'/audio/ with filename background_music.wav. IMPORTANT: Save directly to /workspace directory, not /tmp. Make sure the file is actually saved to the filesystem."
               
               echo "Searching for generated audio files in all locations..."
               find /workspace /tmp /home/claude -name "*.wav" -o -name "*music*" 2>/dev/null | head -10
@@ -183,7 +183,7 @@ jobs:
             -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
             claude-workshop \
             bash -c 'echo "Generating 3D unicorn model with Kamui Code..."
-              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to /workspace/'"${OUTPUT_DIR}"'/models/ with filename unicorn_model.glb. Make sure the file is actually saved to the filesystem."
+              claude --dangerously-skip-permissions --mcp-config ./configs/mcp-kamuicode.json "Generate a 3D unicorn model for a ${{ github.event.inputs.theme }} themed environment using i2i3d-fal-hunyuan3d-v21. $(cat ./prompts/unicorn.txt). After generating, download the 3D model file and save it to /workspace/'"${OUTPUT_DIR}"'/models/ with filename unicorn_model.glb. IMPORTANT: Save directly to /workspace directory, not /tmp. Make sure the file is actually saved to the filesystem."
               
               echo "Searching for generated 3D files in all locations..."
               find /workspace /tmp /home/claude -name "*.glb" -o -name "*unicorn*" 2>/dev/null | head -10
