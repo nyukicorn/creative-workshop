@@ -206,6 +206,14 @@ jobs:
             f.write(html_content)
             
         print("パノラマVRビューワー生成完了")
+        
+        # assetsフォルダをdistにコピー
+        import shutil
+        if os.path.exists('assets'):
+            if os.path.exists('dist/assets'):
+                shutil.rmtree('dist/assets')
+            shutil.copytree('assets', 'dist/assets')
+            print("assetsフォルダをdistにコピー完了")
         EOF
         
     - name: Phase 3 - Deploy
