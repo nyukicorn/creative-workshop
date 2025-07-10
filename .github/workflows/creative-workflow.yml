@@ -27,82 +27,45 @@ jobs:
         pip install requests pillow
         
         
-    - name: Phase 1 - Generate Assets with Kamui Code MCP
+    - name: Install Claude Code
       run: |
-        echo "Kamui Code MCPで新しい素材を生成開始"
+        curl -fsSL https://claude.ai/install.sh | sh
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+        
+    - name: Setup MCP Config
+      run: |
+        mkdir -p ~/.claude
+        cp configs/mcp-kamuicode.json ~/.claude/mcp-config.json
+        
+    - name: Phase 1 - Generate Assets with Claude Code + Kamui MCP
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        echo "Claude Code + Kamui Code MCPで新しい素材を生成開始"
         mkdir -p assets/panorama assets/audio
         
-        # Kamui Code MCPで新しい素材を実際に生成
-        echo "🖼️ Imagen3で新しいパノラマ画像生成中..."
-        python3 << 'PYTHON_SCRIPT'
-        import requests
-        import json
+        echo "🖼️ Imagen3でパノラマ画像生成中..."
+        claude --mcp-config=~/.claude/mcp-config.json "Kamui Code MCPのImagen3を使用して、「神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式」というテーマで1024x1024サイズの画像を現在のディレクトリのassets/panorama/panorama_landscape.pngに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
         
-        # Imagen3 API呼び出し
-        response = requests.post(
-            'https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2i/google/imagen',
-            json={
-                'prompt': '神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式',
-                'width': 1024,
-                'height': 1024
-            },
-            timeout=120
-        )
-        
-        if response.status_code == 200:
-            with open('assets/panorama/panorama_landscape.png', 'wb') as f:
-                f.write(response.content)
-            print("✅ パノラマ画像生成完了")
-        else:
-            print(f"❌ 画像生成エラー: {response.status_code}")
-            print(f"Content-Type: {response.headers.get('content-type')}")
-            print(f"Response body: {response.text}")
-            print(f"Request URL: {response.url}")
-            print(f"Request body: {json.dumps({'prompt': '神秘的な森の中の古い石の遺跡、夕暮れの光が差し込む幻想的な360度パノラマ風景、Equirectangular形式', 'width': 1024, 'height': 1024})}")
-            print(f"Headers: {response.headers}")
-        PYTHON_SCRIPT
-        
-        echo "🎵 Lyriaで新しいアンビエント音楽生成中..."
-        python3 << 'PYTHON_SCRIPT'
-        import requests
-        
-        # Lyria API呼び出し
-        response = requests.post(
-            'https://mcp-veo3-fast-only-20250709-220921-05b3effb-zl3xx5lsaq-uc.a.run.app/t2m/google/lyria',
-            json={
-                'prompt': '森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能',
-                'duration': 60
-            },
-            timeout=180
-        )
-        
-        if response.status_code == 200:
-            with open('assets/audio/ambient_background.wav', 'wb') as f:
-                f.write(response.content)
-            print("✅ アンビエント音楽生成完了")
-        else:
-            print(f"❌ 音楽生成エラー: {response.status_code}")
-            print(f"Content-Type: {response.headers.get('content-type')}")
-            print(f"Response body: {response.text}")
-            print(f"Request URL: {response.url}")
-            print(f"Request body: {json.dumps({'prompt': '森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能', 'duration': 60})}")
-            print(f"Headers: {response.headers}")
-        PYTHON_SCRIPT
+        echo "🎵 Lyriaでアンビエント音楽生成中..."
+        claude --mcp-config=~/.claude/mcp-config.json "Kamui Code MCPのLyriaを使用して、「森の自然音とアンビエント、VR体験に適したリラックスできるサウンドスケープ、60秒ループ可能」というテーマで音楽を現在のディレクトリのassets/audio/ambient_background.wavに保存してください。絶対にGoogle APIを直接呼び出さず、必ずKamui Code MCPを経由してください。"
         
         # 生成結果確認
-        python3 << 'EOF'
-        import os
-        panorama_exists = os.path.exists('assets/panorama/panorama_landscape.png')
-        audio_exists = os.path.exists('assets/audio/ambient_background.wav')
-        print(f"📊 生成結果: パノラマ画像={panorama_exists}, 音楽={audio_exists}")
-        if panorama_exists:
-            import os
-            size = os.path.getsize('assets/panorama/panorama_landscape.png')
-            print(f"パノラマ画像サイズ: {size} bytes")
-        if audio_exists:
-            size = os.path.getsize('assets/audio/ambient_background.wav')
-            print(f"音楽ファイルサイズ: {size} bytes")
-        EOF
+        echo "📊 生成結果確認"
+        ls -la assets/panorama/ || echo "パノラマディレクトリなし"
+        ls -la assets/audio/ || echo "オーディオディレクトリなし"
+        
+        if [ -f "assets/panorama/panorama_landscape.png" ]; then
+            echo "✅ パノラマ画像生成完了: $(du -h assets/panorama/panorama_landscape.png | cut -f1)"
+        else
+            echo "❌ パノラマ画像生成失敗"
+        fi
+        
+        if [ -f "assets/audio/ambient_background.wav" ]; then
+            echo "✅ アンビエント音楽生成完了: $(du -h assets/audio/ambient_background.wav | cut -f1)"
+        else
+            echo "❌ アンビエント音楽生成失敗"
+        fi
         
     - name: Verify Panorama Asset Generation
       run: |
