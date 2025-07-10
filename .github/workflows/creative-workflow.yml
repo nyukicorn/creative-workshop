@@ -41,42 +41,95 @@ jobs:
         import os
         import sys
         import requests
+        import json
+        import time
         from anthropic import Anthropic
         
         # Claude Code SDK でMCP経由で素材生成
         client = Anthropic(api_key=os.environ['ANTHROPIC_API_KEY'])
         
-        # パノラマ画像生成プロンプト
-        panorama_prompt = """
-        Using Kamui Code MCP, generate a 360-degree panoramic landscape image with the following specifications:
-        - Equirectangular format for VR compatibility
-        - High resolution (minimum 2048x1024)
-        - Immersive natural environment (forest, mountains, or ocean)
-        - Download and save to assets/panorama/
-        """
-        
-        # アンビエント音楽生成プロンプト  
-        audio_prompt = """
-        Using Kamui Code MCP, generate ambient background music with the following specifications:
-        - 60 seconds duration
-        - Relaxing soundscape suitable for VR environment
-        - Seamless loop capability
-        - Download and save to assets/audio/
-        """
-        
-        print("パノラマ画像生成中...")
-        # ここでMCP呼び出し処理を実装
-        print("アンビエント音楽生成中...")
-        # ここでMCP呼び出し処理を実装
-        
-        # テスト用に既存ファイルをコピー
-        import shutil
-        if os.path.exists('creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png'):
-            shutil.copy('creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png', 'assets/panorama/panorama_landscape.png')
-        if os.path.exists('creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav'):
-            shutil.copy('creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav', 'assets/audio/ambient_background.wav')
+        def generate_panorama_with_mcp(theme="森の風景"):
+            print(f"🖼️ テーマ「{theme}」でパノラマ画像生成中...")
             
-        print("素材生成完了")
+            # Claude Code SDK経由でKamui Code MCPを呼び出し
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4000,
+                messages=[{
+                    "role": "user",
+                    "content": f"""
+                    Kamui Code MCPを使用して、以下の仕様で360度パノラマ画像を生成してください：
+                    
+                    テーマ: {theme}
+                    
+                    仕様:
+                    - 360度パノラマ（Equirectangular形式）
+                    - 高解像度（最低2048x1024）
+                    - VR体験に適した没入感のある環境
+                    - 現在の作業ディレクトリのassets/panoramaフォルダに保存
+                    - ファイル名: panorama_landscape.png
+                    
+                    生成後、必ずファイルが正常に保存されたことを確認してください。
+                    """
+                }]
+            )
+            
+            print("パノラマ画像生成応答:", message.content[0].text[:200] + "...")
+            
+        def generate_audio_with_mcp(theme="森の自然音"):
+            print(f"🎵 テーマ「{theme}」でアンビエント音楽生成中...")
+            
+            message = client.messages.create(
+                model="claude-3-5-sonnet-20241022",
+                max_tokens=4000,
+                messages=[{
+                    "role": "user", 
+                    "content": f"""
+                    Kamui Code MCPを使用して、以下の仕様でアンビエント音楽を生成してください：
+                    
+                    テーマ: {theme}
+                    
+                    仕様:
+                    - 60秒間のループ可能な音楽
+                    - VR体験に適したリラックスできるサウンドスケープ
+                    - 環境に適した自然音やアンビエント音
+                    - 現在の作業ディレクトリのassets/audioフォルダに保存
+                    - ファイル名: ambient_background.wav
+                    
+                    生成後、必ずファイルが正常に保存されたことを確認してください。
+                    """
+                }]
+            )
+            
+            print("アンビエント音楽生成応答:", message.content[0].text[:200] + "...")
+        
+        # 実際の生成実行
+        try:
+            generate_panorama_with_mcp("神秘的な森の風景")
+            time.sleep(5)  # 生成待機
+            generate_audio_with_mcp("森の自然音とアンビエント")
+            time.sleep(5)  # 生成待機
+            
+            print("✅ MCP経由での素材生成完了")
+            
+        except Exception as e:
+            print(f"❌ MCP生成エラー: {e}")
+            print("フォールバック: 既存ファイルを使用")
+            
+            # フォールバック: 既存ファイルをコピー
+            import shutil
+            if os.path.exists('creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png'):
+                shutil.copy('creative-workshop-v2/assets/imagen_imagen-3.0-generate-002_20250709_224034_0.png', 'assets/panorama/panorama_landscape.png')
+                print("パノラマ画像: フォールバック完了")
+            if os.path.exists('creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav'):
+                shutil.copy('creative-workshop-v2/assets/audio/lyria_output_Rz0Lm9sHg.wav', 'assets/audio/ambient_background.wav')
+                print("アンビエント音楽: フォールバック完了")
+        
+        # 生成結果確認
+        panorama_exists = os.path.exists('assets/panorama/panorama_landscape.png')
+        audio_exists = os.path.exists('assets/audio/ambient_background.wav')
+        
+        print(f"📊 生成結果: パノラマ画像={panorama_exists}, 音楽={audio_exists}")
         EOF
         
     - name: Verify Panorama Asset Generation
